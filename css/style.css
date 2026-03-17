@@ -969,22 +969,29 @@ textarea.floating-input ~ .floating-label {
 }
 
 .footer-social-circ a {
-    width: 35px;
     height: 35px;
+    padding: 0 15px;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     background: var(--white);
-    color: #111e11; /* Dark icon to match background */
-    border-radius: 50%;
+    color: #111e11;
+    border-radius: 50px; /* Pill shape for text */
     transition: var(--transition);
-    font-size: 1.1rem;
+    font-size: 1rem;
+    font-weight: 600;
 }
 
 .footer-social-circ a:hover {
-    transform: scale(1.1);
+    transform: translateY(-3px);
     background: var(--primary-color);
     color: var(--white);
+}
+
+.social-text {
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
 }
 
 .footer-copyright {
@@ -1005,11 +1012,21 @@ textarea.floating-input ~ .floating-label {
     font-size: 1.8rem; /* Large icon size */
 }
 
-/* To match the white background of colored icons */
-.footer-payments i {
-    background: var(--white);
+.delivery-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 6px 12px;
     border-radius: 4px;
-    line-height: 1;
+    letter-spacing: 1px;
+    color: white;
+}
+
+.zomato {
+    background: #E23744; /* Official Zomato Red */
+}
+
+.swiggy {
+    background: #FC8019; /* Official Swiggy Orange */
 }
 
 .cod-badge {
