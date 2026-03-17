@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salado Cafe | Binnamangala</title>
+    <meta name="description" content="Salado Cafe at B.H Road, Binnamangala - Fresh smoothies, salads, and meals">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">
+                <a href="#home">
+                    <img src="images/salado-cafe-Light-01-2048x1152.webp" alt="Salado Cafe Logo" class="logo-img">
+                </a>
+            </div>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#menu">Menu</a></li>
+                <li><a href="#gallery">Gallery</a></li>
+                <li><a href="#location">Location</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <div class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <!-- 3D Parallax Background Elements -->
+        <div class="parallax-container">
+            <img src="images/floating_leaf.png" alt="" class="parallax-item float-near p-hero-1" data-speed="0.8">
+            <img src="images/floating_tomato.png" alt="" class="parallax-item float-mid p-hero-2" data-speed="0.4">
+            <img src="images/floating_leaf.png" alt="" class="parallax-item float-far p-hero-3" data-speed="0.2">
+        </div>
+        
+        <div class="container hero-container">
+            <div class="hero-left reveal">
+                <div class="text-mask"><h1 class="hero-title">Healthy & Fresh</h1></div>
+                <div class="text-mask"><h1 class="hero-title">Dining Oasis</h1></div>
+                <p class="hero-subtitle">B.H Road, Binnamangala</p>
+                
+                <div class="hero-search-bar">
+                    <div class="search-location">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <select aria-label="Location">
+                            <option>Binnamangala</option>
+                            <option>Bengaluru</option>
+                        </select>
+                    </div>
+                    <input type="text" placeholder="Search healthy meals..." class="search-input">
+                    <button class="search-btn" aria-label="Search"><i class="fas fa-search"></i></button>
+                </div>
+
+                <div class="hero-rating">
+                    <span class="rating-number">1k+</span>
+                    <div class="stars">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                    </div>
+                    <span class="rating-text">4.5 Star Rating</span>
+                </div>
+            </div>
+
+            <div class="hero-right reveal">
+                <img src="C:\Users\priya\.gemini\antigravity\brain\d061d3c0-4f4d-4f67-8264-758c1f5e4bbd\premium_healthy_salad_dark_1773763511351.png" alt="Premium Healthy Salad Bowl" class="hero-main-img">
+            </div>
+        </div>
+
+        <!-- Glassmorphism Categories Bar -->
+        <div class="hero-categories-bar reveal">
+            <div class="category-card" onclick="filterMenu('smoothies')">
+                <img src="images/smoothie.png" alt="Smoothies" class="cat-img">
+                <div class="cat-info">
+                    <h4>Smoothies</h4>
+                    <p>From ₹160</p>
+                    <span class="cat-link">Click Here <i class="fas fa-arrow-right"></i></span>
+                </div>
+            </div>
+            <div class="category-card" onclick="filterMenu('juices')">
+                <img src="images/chocolate_cake.png" alt="Juices" class="cat-img">
+                <div class="cat-info">
+                    <h4>Juices</h4>
+                    <p>From ₹120</p>
+                    <span class="cat-link">Click Here <i class="fas fa-arrow-right"></i></span>
+                </div>
+            </div>
+            <div class="category-card" onclick="filterMenu('salads')">
+                <img src="images/SaladO-Cafe-VEG-NON-VEG-MENU-CARD-Standard-NEW_page-0001.jpg" alt="Salads" class="cat-img">
+                <div class="cat-info">
+                    <h4>Salads</h4>
+                    <p>From ₹180</p>
+                    <span class="cat-link">Click Here <i class="fas fa-arrow-right"></i></span>
+                </div>
+            </div>
+            <div class="category-card" onclick="filterMenu('sandwiches')">
+                <img src="images/SaladO-Cafe-VEG-NON-VEG-MENU-CARD-Standard-NEW_page-0001.jpg" alt="Sandwiches" class="cat-img">
+                <div class="cat-info">
+                    <h4>Sandwiches</h4>
+                    <p>From ₹140</p>
+                    <span class="cat-link">Click Here <i class="fas fa-arrow-right"></i></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="section about" id="about">
+        <!-- 3D Parallax Background Elements -->
+        <div class="parallax-container">
+            <img src="images/floating_tomato.png" alt="" class="parallax-item float-near p-about-1" data-speed="-0.7">
+            <img src="images/floating_leaf.png" alt="" class="parallax-item float-mid p-about-2" data-speed="0.5">
+            <img src="images/floating_tomato.png" alt="" class="parallax-item float-far p-about-3" data-speed="0.1">
+        </div>
+
+        <div class="container">
+            <div class="section-header">
+                <div class="text-mask"><h2 class="section-title">About Us</h2></div>
+                <div class="underline"></div>
+            </div>
+            <div class="about-content">
+                <div class="about-text">
+                    <h3>Your Neighborhood Healthy Haven</h3>
+                    <p>Welcome to Salado Cafe at B.H Road, Binnamangala! We're your local destination for fresh smoothies, vibrant salads, and delicious meals.</p>
+                    <p>Located right beside Amma's Pastries, we combine the trusted quality of the Salado Cafe brand with the warm, personal touch of a neighborhood cafe.</p>
+                    <p>Whether you're looking for a quick espresso on your way to work, a relaxing afternoon with a slice of cake, or a gathering spot with friends - we're the perfect place.</p>
+                    <div class="about-features">
+                        <div class="feature-item">
+                            <i class="fas fa-leaf"></i>
+                            <span>Fresh Smoothies</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-utensils"></i>
+                            <span>Fresh Meals</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-heart"></i>
+                            <span>Warm Atmosphere</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-wifi"></i>
+                            <span>Free Wi-Fi</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-image">
+                    <img src="images/hero-bg.jpg" alt="Salado Cafe Interior">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Menu Section -->
+    <section class="section menu" id="menu">
+        <!-- 3D Parallax Background Elements -->
+        <div class="parallax-container">
+            <img src="images/floating_leaf.png" alt="" class="parallax-item float-near p-menu-1" data-speed="0.9">
+            <img src="images/floating_tomato.png" alt="" class="parallax-item float-mid p-menu-2" data-speed="-0.5">
+            <img src="images/floating_leaf.png" alt="" class="parallax-item float-far p-menu-3" data-speed="0.3">
+            <img src="images/floating_tomato.png" alt="" class="parallax-item float-mid p-menu-4" data-speed="0.6">
+        </div>
+
+        <div class="container">
+            <div class="section-header">
+                <div class="text-mask"><h2 class="section-title">Our Menu</h2></div>
+                <div class="underline"></div>
+                <p class="section-description">Indulge in our wide range of beverages, meals, and treats</p>
+                <div class="menu-board-actions">
+                    <button class="btn btn-secondary filter-btn" onclick="filterMenu('all')" id="viewAllMenuBtn" data-magnetic><span>View All</span></button>
+                    <a href="images/SaladO-Cafe-VEG-NON-VEG-MENU-CARD-Standard-NEW.pdf" target="_blank" class="btn btn-primary" data-magnetic><span>Full Menu Board</span></a>
+                    <a href="images/SaladO-Cafe-VEG-NON-VEG-MENU-CARD-Standard-NEW.pdf" download class="btn btn-secondary" data-magnetic><span><i class="fas fa-download"></i> Download</span></a>
+                </div>
+            </div>
+
+            <!-- Image Gallery Menu (Scrolling with Category Tags) -->
+            <div class="menu-image-gallery" id="menuGallery">
+                <div class="menu-card reveal" data-categories="salads bowls">
+                    <img src="images/SaladO-Cafe-VEG-NON-VEG-MENU-CARD-Standard-NEW_page-0001.jpg" alt="Salado Cafe Official Menu Page 1 - Salads and Bowls" loading="lazy">
+                </div>
+                <div class="menu-card reveal" data-categories="sandwiches wraps salads pizzas burgers smoothies juices">
+                    <img src="images/SaladO-Cafe-VEG-NON-VEG-MENU-CARD-Standard-NEW_page-0002.jpg" alt="Salado Cafe Official Menu Page 2 - Sandwiches, Wraps, Smoothies, Pizzas" loading="lazy">
+                </div>
+                <div class="menu-card reveal" data-categories="shakes mocktails smoothies">
+                    <img src="images/SaladO-Cafe-VEG-NON-VEG-MENU-CARD-Standard-NEW_page-0003.jpg" alt="Salado Cafe Official Menu Page 3 - Shakes and Smoothies" loading="lazy">
+                </div>
+                <div class="menu-card reveal" data-categories="mojitos drinks">
+                    <img src="images/SaladO-Cafe-VEG-NON-VEG-MENU-CARD-Standard-NEW_page-0004.jpg" alt="Salado Cafe Official Menu Page 4 - More Beverages" loading="lazy">
+                </div>
+                <div class="menu-card reveal" data-categories="combos">
+                    <img src="images/SaladO-Cafe-VEG-NON-VEG-MENU-CARD-Standard-NEW_page-0005.jpg" alt="Salado Cafe Official Menu Page 5 - Combos" loading="lazy">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery Section -->
+    <section class="section gallery" id="gallery">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Our Gallery</h2>
+                <div class="underline"></div>
+                <p class="section-description">A glimpse into our cafe atmosphere</p>
+            </div>
+            <div class="gallery-grid">
+                <div class="gallery-item">
+                    <img src="images/hero-bg.jpg" alt="Cafe Interior">
+                </div>
+                <div class="gallery-item">
+                    <img src="images/salad_prep.png" alt="Fresh Salad Preparation">
+                </div>
+                <div class="gallery-item">
+                    <img src="images/smoothie.png" alt="Healthy Green Smoothie">
+                </div>
+                <div class="gallery-item">
+                    <img src="images/fruit_bowl.png" alt="Healthy Acai Fruit Bowl">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Location Section -->
+    <section class="section location" id="location">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Find Us</h2>
+                <div class="underline"></div>
+                <p class="section-description">We're waiting to welcome you!</p>
+            </div>
+            <div class="location-content">
+                <div class="location-info">
+                    <div class="info-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <h4>Address</h4>
+                            <p>B.H Road, Binnamangala<br>Beside Amma's Pastries<br>Nelamangala, Bengaluru South<br>Karnataka - 562123</p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-phone-alt"></i>
+                        <div>
+                            <h4>Phone</h4>
+                            <p>+91 98765 43210</p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <h4>Email</h4>
+                            <p>info@saladocafebinnamangala.com</p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                            <h4>Opening Hours</h4>
+                            <p>Monday - Sunday<br>8:00 AM - 10:00 PM</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="location-map">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15229.38!2d77.5947!3d12.9165!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae1571b8b2e77b%3A0x6a5f5c0b0b0b0b0b!2sNelamangala%2C%20Karnataka!5e0!3m2!1sen!2sin!4v1709452800000!5m2!1sen!2sin" allowfullscreen="" loading="lazy"></iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Premium Footer (Reference Match) -->
+    <footer class="footer-premium">
+        <div class="container">
+            <!-- Top Grid: 4 Columns -->
+            <div class="footer-grid">
+                <!-- Column 1: Information -->
+                <div class="footer-col">
+                    <h4 class="footer-heading">INFORMATION</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Privacy policy</a></li>
+                        <li><a href="#">Terms & Conditions</a></li>
+                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Blogs</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 2: Quick Links & Contact Card -->
+                <div class="footer-col">
+                    <h4 class="footer-heading">QUICK LINKS</h4>
+                    <ul class="footer-links" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px;">
+                        <li><a href="#">Our Team</a></li>
+                        <li><a href="#">Our Story</a></li>
+                        <li><a href="#">Franchise Partner</a></li>
+                    </ul>
+
+                    <h4 class="footer-heading" style="margin-bottom: 15px;">GET IN TOUCH</h4>
+                    <form class="footer-contact-form" id="footerContactForm">
+                        <input type="text" name="name" class="footer-input" placeholder="Your Name" required>
+                        <input type="email" name="email" class="footer-input" placeholder="Your Email" required>
+                        <textarea name="message" class="footer-input" rows="2" placeholder="Your Message" required></textarea>
+                        <button type="submit" class="btn btn-footer" data-magnetic><span>Send Message</span></button>
+                    </form>
+                </div>
+
+                <!-- Column 3: Our Company -->
+                <div class="footer-col">
+                    <h4 class="footer-heading">OUR COMPANY</h4>
+                    <p class="footer-text">
+                        <strong>Address:</strong> 4th Floor, Vishal Point Building, Shahid Circle, Gangapur Road, Near D'Souza Colony, Uday Nagar, Nashik, Maharashtra &ndash; 422013
+                    </p>
+                    <p class="footer-text" style="margin-top: 20px;">
+                        Hours: 9:30 AM &ndash; 7:30 PM ( Mon &ndash; Fri )
+                    </p>
+                </div>
+
+                <!-- Column 4: Our Other Brands -->
+                <div class="footer-col">
+                    <h4 class="footer-heading">OUR OTHER BRANDS</h4>
+                    <div class="brand-logos">
+                        <!-- Typographic Placeholders matching reference -->
+                        <span class="brand-salado">SaladO</span>
+                        <div class="brand-eats">
+                            <span>THE</span>
+                            <span>EATS</span>
+                            <span>AFFAIR</span>
+                        </div>
+                        <span class="brand-hummazing">Hummazing</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middle Logo -->
+            <div class="footer-mid">
+                <img src="images/salado-cafe-Light-01-2048x1152.webp" alt="Salado Cafe" class="footer-main-logo">
+            </div>
+
+            <!-- Bottom Row: Splitting into Social | Copyright | Payments -->
+            <div class="footer-bottom-row">
+                <div class="footer-social-circ">
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-x-twitter"></i></a>
+                    <a href="#"><i class="fab fa-pinterest-p"></i></a>
+                </div>
+                
+                <div class="footer-copyright">
+                    <p>SALADO &copy; 2026 All rights reserved. Designed By <span>Social Wits</span></p>
+                </div>
+
+                <div class="footer-payments">
+                    <i class="fab fa-cc-visa" style="color: #1A1F71;"></i>
+                    <i class="fab fa-cc-mastercard" style="color: #EB001B;"></i>
+                    <i class="fab fa-cc-amex" style="color: #2E77BC;"></i>
+                    <i class="fab fa-cc-paypal" style="color: #003087;"></i>
+                    <i class="fab fa-cc-discover" style="color: #E26017;"></i>
+                    <span class="cod-badge">COD</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Custom Interactive Cursor -->
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
