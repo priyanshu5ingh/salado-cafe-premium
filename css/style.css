@@ -102,7 +102,7 @@ img {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px;
+    padding: 15px 20px;
 }
 
 .logo {
@@ -114,9 +114,14 @@ img {
 }
 
 .logo img {
-    height: 50px;
+    height: 75px;
     width: auto;
     object-fit: contain;
+    transition: var(--transition);
+}
+
+.navbar.scrolled .logo img {
+    height: 60px; /* Shrink slightly when scrolled */
 }
 
 .nav-links {
