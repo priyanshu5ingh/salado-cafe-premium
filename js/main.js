@@ -156,20 +156,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 const distanceFromCenter = cardCenter - galleryCenter;
                 const absDist = Math.abs(distanceFromCenter);
                 
-                // Calculate dynamic values for "Liquid" feel
-                // Scale from 1.0 (center) down to ~0.7 (edges)
-                // Rotate from 0deg (center) to ~45deg (edges)
+                // Calculate dynamic values for "Liquid" feel suited for Full-Screen Cards
+                // Scale from 1.0 (center) down to ~0.85 (edges)
+                // Rotate from 0deg (center) to ~35deg (edges) for softer tilt
                 const maxDist = galleryRect.width / 2;
                 const pct = Math.min(absDist / maxDist, 1); // 0 at center, 1 at edges
                 
-                const scale = 1.15 - (pct * 0.35); // Max 1.15, Min 0.8
-                const rotateY = (distanceFromCenter / maxDist) * -45; // Degrees
-                const opacity = 1 - (pct * 0.5); // Min 0.5
-                const blur = pct * 2; // Max 2px blur
+                const scale = 1.0 - (pct * 0.15); // Max 1.0, Min 0.85
+                const rotateY = (distanceFromCenter / maxDist) * -35; // Degrees
+                const opacity = 1 - (pct * 0.4); // Min 0.6
+                const blur = pct * 4; // Max 4px blur
                 const zIndex = Math.round((1 - pct) * 100);
 
                 // Apply dynamic styles directly for smooth interpolation
-                card.style.transform = `translateZ(${100 * (1-pct)}px) rotateY(${rotateY}deg) scale(${scale})`;
+                card.style.transform = `translateZ(${150 * (1-pct)}px) rotateY(${rotateY}deg) scale(${scale})`;
                 card.style.opacity = opacity;
                 card.style.filter = `blur(${blur}px)`;
                 card.style.zIndex = zIndex;

@@ -581,20 +581,23 @@ img {
     background: var(--bg-color);
 }
 
-/* Menu Image Gallery - 3D Slider Redesign */
+/* Menu Image Gallery - Full Screen 3D Slider Redesign */
 .menu-slider-visual {
     position: relative;
-    max-width: 1200px;
+    width: 100%;
     margin: 40px auto;
-    padding: 40px 0;
-    perspective: 2000px; /* Enable 3D perspective */
+    padding: 20px 0;
+    perspective: 2500px; /* Deeper perspective for large cards */
     overflow: hidden;
+    height: 90vh; /* Make slider container almost full screen */
 }
 
 .menu-image-gallery {
     display: flex;
     overflow-x: scroll;
-    padding: 40px 20%;
+    height: 100%;
+    align-items: center;
+    padding: 0 5vw; /* Center the first/last items (50vw - 45vw = 5vw) */
     gap: 0; /* Cards overlap slightly for 3D effect */
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
@@ -602,15 +605,23 @@ img {
     scrollbar-width: none; /* Hide scrollbar Hide scrollbar firefox */
 }
 
+@media (min-width: 1000px) {
+    .menu-image-gallery {
+        /* If max width is 800px, padding is (100vw - 800px) / 2 */
+        padding: 0 calc(50vw - 400px);
+    }
+}
+
 .menu-image-gallery::-webkit-scrollbar {
     display: none; /* Hide scrollbar chrome/safari */
 }
 
 .menu-card {
-    flex: 0 0 350px;
-    max-width: 350px;
-    height: 500px;
-    margin: 0 -15px; /* Softer overlap effect */
+    flex: 0 0 90vw;
+    max-width: 800px;
+    height: 85vh;
+    max-height: 1100px;
+    margin: 0 -15vw; /* Softer overlap effect */
     background: transparent; /* Remove heavy dark background */
     border-radius: 12px;
     overflow: hidden;
@@ -623,6 +634,12 @@ img {
     transform-style: preserve-3d;
     z-index: 1;
     will-change: transform, opacity, filter;
+}
+
+@media (min-width: 1000px) {
+    .menu-card {
+        margin: 0 -120px; /* Fixed overlap for large screens */
+    }
 }
 
 .menu-card img {
@@ -713,11 +730,12 @@ img {
 
 @media (max-width: 768px) {
     .menu-card {
-        flex: 0 0 280px;
-        height: 400px;
+        flex: 0 0 92vw;
+        height: 80vh;
+        margin: 0 -25vw;
     }
-    .menu-slider-visual {
-        perspective: none;
+    .menu-image-gallery {
+        padding: 0 4vw;
     }
     .slider-btn {
         width: 45px;
