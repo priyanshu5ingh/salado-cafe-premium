@@ -154,17 +154,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 const cardRect = card.getBoundingClientRect();
                 const cardCenter = cardRect.left + cardRect.width / 2;
                 const distanceFromCenter = cardCenter - galleryCenter;
+                const absDist = Math.abs(distanceFromCenter);
                 
-                // Clear old classes
-                card.classList.remove('active-slide', 'left-slide', 'right-slide');
+                // Calculate dynamic values for "Liquid" feel
+                // Scale from 1.0 (center) down to ~0.7 (edges)
+                // Rotate from 0deg (center) to ~45deg (edges)
+                const maxDist = galleryRect.width / 2;
+                const pct = Math.min(absDist / maxDist, 1); // 0 at center, 1 at edges
+                
+                const scale = 1.15 - (pct * 0.35); // Max 1.15, Min 0.8
+                const rotateY = (distanceFromCenter / maxDist) * -45; // Degrees
+                const opacity = 1 - (pct * 0.5); // Min 0.5
+                const blur = pct * 2; // Max 2px blur
+                const zIndex = Math.round((1 - pct) * 100);
 
-                // Determine transform based on distance from viewport center
-                if (Math.abs(distanceFromCenter) < 150) {
+                // Apply dynamic styles directly for smooth interpolation
+                card.style.transform = `translateZ(${100 * (1-pct)}px) rotateY(${rotateY}deg) scale(${scale})`;
+                card.style.opacity = opacity;
+                card.style.filter = `blur(${blur}px)`;
+                card.style.zIndex = zIndex;
+
+                // Add active-slide class for specific CSS shadows if needed
+                if (absDist < 100) {
                     card.classList.add('active-slide');
-                } else if (distanceFromCenter < 0) {
-                    card.classList.add('left-slide');
                 } else {
-                    card.classList.add('right-slide');
+                    card.classList.remove('active-slide');
                 }
             });
         };
