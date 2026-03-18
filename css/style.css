@@ -626,36 +626,164 @@ img {
     background: var(--bg-color);
 }
 
-/* Official Menu Images Gallery */
+/* Menu Image Gallery - 3D Slider Redesign */
+.menu-slider-visual {
+    position: relative;
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 40px 0;
+    perspective: 2000px; /* Enable 3D perspective */
+    overflow: hidden;
+}
+
 .menu-image-gallery {
     display: flex;
-    flex-direction: column;
-    gap: 40px;
-    align-items: center;
-    max-width: 900px;
-    margin: 0 auto;
+    overflow-x: scroll;
+    padding: 40px 20%;
+    gap: 0; /* Cards overlap slightly for 3D effect */
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Hide scrollbar Hide scrollbar firefox */
+}
+
+.menu-image-gallery::-webkit-scrollbar {
+    display: none; /* Hide scrollbar chrome/safari */
 }
 
 .menu-card {
-    width: 100%;
-    border-radius: 20px;
+    flex: 0 0 350px;
+    max-width: 350px;
+    height: 500px;
+    margin: 0 -30px; /* Overlap effect */
+    background: #111e11;
+    border-radius: 15px;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 0 20px rgba(139, 195, 74, 0.05); /* Soft ambient green glow */
-    transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-.menu-card:hover {
-    transform: translateY(-12px) scale(1.01);
-    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.6), 0 0 40px rgba(139, 195, 74, 0.15); /* Stronger glow on hover */
-    border-color: rgba(139, 195, 74, 0.3);
+    position: relative;
+    transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.6s ease, box-shadow 0.6s ease;
+    cursor: pointer;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+    scroll-snap-align: center;
+    transform-style: preserve-3d;
+    z-index: 1;
 }
 
 .menu-card img {
     width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: auto;
+}
+
+/* 3D "Cover Flow" States via JS active class or CSS selectors */
+.menu-card:not(.active-slide) {
+    opacity: 0.6;
+    filter: brightness(0.5) blur(1px);
+}
+
+.menu-card.active-slide {
+    z-index: 10 !important;
+    transform: scale(1.15) translateZ(100px);
+    opacity: 1;
+    box-shadow: 0 25px 60px rgba(139, 195, 74, 0.3);
+}
+
+/* These will be manipulated via JS for position-based rotation */
+.menu-card.left-slide {
+    transform: rotateY(45deg) scale(0.9) translateX(50px);
+}
+
+.menu-card.right-slide {
+    transform: rotateY(-45deg) scale(0.9) translateX(-50px);
+}
+
+/* Slider Controls */
+.slider-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: var(--transition);
+    cursor: none; /* Magnetic hover handles this */
+}
+
+.slider-btn:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.prev-btn { left: 20px; }
+.next-btn { right: 20px; }
+
+/* Lightbox Modal */
+.lightbox {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    padding-top: 50px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(5px);
+}
+
+.lightbox-content {
+    margin: auto;
     display: block;
-    height: auto;
+    width: auto;
+    max-width: 90%;
+    max-height: 85vh;
+    border-radius: 10px;
+    animation: zoom 0.3s ease-out;
+}
+
+@keyframes zoom {
+    from {transform: scale(0.1)} 
+    to {transform: scale(1)}
+}
+
+.close-lightbox {
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.close-lightbox:hover {
+    color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+    .menu-card {
+        flex: 0 0 280px;
+        height: 400px;
+    }
+    .menu-slider-visual {
+        perspective: none;
+    }
+    .slider-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 1.2rem;
+    }
 }
 
 .category-title i {

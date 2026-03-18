@@ -136,38 +136,100 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Menu category filtering logic
-    window.filterMenu = function(category) {
-        const menuGallery = document.getElementById('menu');
-        if(menuGallery) {
-            menuGallery.scrollIntoView({behavior: 'smooth'});
+    // --- 3D Menu Slider Logic ---
+    const menuGallery = document.getElementById('menuGallery');
+    const menuCards = document.querySelectorAll('.menu-card');
+    const prevBtn = document.getElementById('prevMenu');
+    const nextBtn = document.getElementById('nextMenu');
+    const viewAllBtn = document.getElementById('viewAllMenuBtn');
+
+    if (menuGallery) {
+        const updateSlider3D = () => {
+            const galleryRect = menuGallery.getBoundingClientRect();
+            const galleryCenter = galleryRect.left + galleryRect.width / 2;
+
+            menuCards.forEach(card => {
+                if (card.style.display === 'none') return;
+
+                const cardRect = card.getBoundingClientRect();
+                const cardCenter = cardRect.left + cardRect.width / 2;
+                const distanceFromCenter = cardCenter - galleryCenter;
+                
+                // Clear old classes
+                card.classList.remove('active-slide', 'left-slide', 'right-slide');
+
+                // Determine transform based on distance from viewport center
+                if (Math.abs(distanceFromCenter) < 150) {
+                    card.classList.add('active-slide');
+                } else if (distanceFromCenter < 0) {
+                    card.classList.add('left-slide');
+                } else {
+                    card.classList.add('right-slide');
+                }
+            });
+        };
+
+        menuGallery.addEventListener('scroll', () => {
+            requestAnimationFrame(updateSlider3D);
+        });
+
+        // Initialize on load
+        setTimeout(updateSlider3D, 200);
+
+        // Navigation Buttons
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                const scrollAmount = menuCards[0].offsetWidth - 30; // Account for overlap
+                menuGallery.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            });
         }
 
-        const menuCards = document.querySelectorAll('.menu-card');
-        const viewAllBtn = document.getElementById('viewAllMenuBtn');
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                const scrollAmount = menuCards[0].offsetWidth - 30;
+                menuGallery.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+            });
+        }
+    }
+
+    // Menu category filtering logic
+    window.filterMenu = function(category) {
+        const menuSection = document.getElementById('menu');
+        if(menuSection) {
+            const navbarHeight = document.querySelector('.navbar').offsetHeight;
+            const targetPosition = menuSection.offsetTop - navbarHeight;
+            window.scrollTo({ top: targetPosition, behavior: 'smooth' });
+        }
+
+        let firstFilteredCard = null;
 
         menuCards.forEach(card => {
-            // Reset animations so they re-trigger
-            card.style.animation = 'none';
-            card.offsetHeight; // trigger reflow
-            card.style.animation = null; 
-
             if (category === 'all') {
                 card.style.display = 'block';
-                setTimeout(() => card.classList.add('active'), 50);
+                if (!firstFilteredCard) firstFilteredCard = card;
             } else {
                 const categories = card.getAttribute('data-categories');
                 if (categories && categories.includes(category)) {
                     card.style.display = 'block';
-                    setTimeout(() => card.classList.add('active'), 50);
+                    if (!firstFilteredCard) firstFilteredCard = card;
                 } else {
                     card.style.display = 'none';
-                    card.classList.remove('active');
+                    card.classList.remove('active-slide', 'left-slide', 'right-slide');
                 }
             }
         });
 
-        // Highlight the "View All" button if filtered
+        // Snap slider to the first visible card
+        if (firstFilteredCard && menuGallery) {
+            setTimeout(() => {
+                menuGallery.scrollTo({
+                    left: firstFilteredCard.offsetLeft - menuGallery.offsetWidth / 2 + firstFilteredCard.offsetWidth / 2,
+                    behavior: 'smooth'
+                });
+            }, 500);
+        }
+
+        // Highlight "View All" button
         if(viewAllBtn) {
             if(category === 'all') {
                 viewAllBtn.classList.remove('btn-primary');
@@ -176,6 +238,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 viewAllBtn.classList.remove('btn-secondary');
                 viewAllBtn.classList.add('btn-primary');
             }
+        }
+    };
+
+    // --- Lightbox Logic ---
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+
+    window.openLightbox = function(src) {
+        if (lightbox && lightboxImg) {
+            lightboxImg.src = src;
+            lightbox.style.display = "block";
+            document.body.style.overflow = "hidden"; // Prevent scrolling
+        }
+    };
+
+    window.closeLightbox = function() {
+        if (lightbox) {
+            lightbox.style.display = "none";
+            document.body.style.overflow = "auto";
         }
     };
 

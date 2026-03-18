@@ -83,36 +83,36 @@
 
         <!-- Glassmorphism Categories Bar -->
         <div class="hero-categories-bar reveal">
-            <div class="category-card" onclick="filterMenu('smoothies')">
+            <div class="category-card" onclick="filterMenu('smoothies'); window.location.href = '#menu';">
                 <img src="images/smoothie.png" alt="Smoothies" class="cat-img">
                 <div class="cat-info">
                     <h4>Smoothies</h4>
                     <p>From ₹160</p>
-                    <span class="cat-link">Click Here <i class="fas fa-arrow-right"></i></span>
+                    <span class="cat-link">View Menu <i class="fas fa-arrow-right"></i></span>
                 </div>
             </div>
-            <div class="category-card" onclick="filterMenu('juices')">
+            <div class="category-card" onclick="filterMenu('juices'); window.location.href = '#menu';">
                 <img src="images/smoothie.png" alt="Juices" class="cat-img">
                 <div class="cat-info">
                     <h4>Juices</h4>
                     <p>From ₹120</p>
-                    <span class="cat-link">Click Here <i class="fas fa-arrow-right"></i></span>
+                    <span class="cat-link">View Menu <i class="fas fa-arrow-right"></i></span>
                 </div>
             </div>
-            <div class="category-card" onclick="filterMenu('salads')">
-                <img src="images/SaladO-Cafe-VEG-NON-VEG-MENU-CARD-Standard-NEW_page-0001.jpg" alt="Salads" class="cat-img">
+            <div class="category-card" onclick="filterMenu('salads'); window.location.href = '#menu';">
+                <img src="images/menu_nelamangala_page_1.jpg" alt="Salads" class="cat-img">
                 <div class="cat-info">
                     <h4>Salads</h4>
                     <p>From ₹180</p>
-                    <span class="cat-link">Click Here <i class="fas fa-arrow-right"></i></span>
+                    <span class="cat-link">View Menu <i class="fas fa-arrow-right"></i></span>
                 </div>
             </div>
-            <div class="category-card" onclick="filterMenu('sandwiches')">
-                <img src="images/SaladO-Cafe-VEG-NON-VEG-MENU-CARD-Standard-NEW_page-0001.jpg" alt="Sandwiches" class="cat-img">
+            <div class="category-card" onclick="filterMenu('sandwiches'); window.location.href = '#menu';">
+                <img src="images/menu_nelamangala_page_1.jpg" alt="Sandwiches" class="cat-img">
                 <div class="cat-info">
                     <h4>Sandwiches</h4>
                     <p>From ₹140</p>
-                    <span class="cat-link">Click Here <i class="fas fa-arrow-right"></i></span>
+                    <span class="cat-link">View Menu <i class="fas fa-arrow-right"></i></span>
                 </div>
             </div>
         </div>
@@ -182,39 +182,49 @@
                 <div class="menu-board-actions">
                     <button class="btn btn-secondary filter-btn" onclick="filterMenu('all')" id="viewAllMenuBtn" data-magnetic><span>View All</span></button>
                     <a href="images/Salado-Nelamangala-Menu.pdf" target="_blank" class="btn btn-primary" data-magnetic><span>Full Menu Board</span></a>
-                    <a href="images/Salado-Nelamangala-Menu.pdf" download class="btn btn-secondary" data-magnetic><span><i class="fas fa-download"></i> Download</span></a>
                 </div>
             </div>
 
-            <!-- Image Gallery Menu (Nelamangala Bengaluru Menu - 8 Pages) -->
-            <div class="menu-image-gallery" id="menuGallery">
-                <div class="menu-card reveal" data-categories="salads bowls smoothies juices sandwiches">
-                    <img src="images/menu_nelamangala_page_1.jpg" alt="SaladO Menu - Cover" loading="lazy">
+            <!-- Image Gallery Menu (Nelamangala Bengaluru Menu - 3D Slider) -->
+            <div class="menu-slider-visual">
+                <button class="slider-btn prev-btn" id="prevMenu" aria-label="Previous Page"><i class="fas fa-chevron-left"></i></button>
+                <div class="menu-image-gallery" id="menuGallery">
+                    <div class="menu-card reveal" data-categories="salads bowls smoothies juices sandwiches">
+                        <img src="images/menu_nelamangala_page_1.jpg" alt="SaladO Menu - Cover" loading="lazy" onclick="openLightbox(this.src)">
+                    </div>
+                    <div class="menu-card reveal" data-categories="salads bowls">
+                        <img src="images/menu_nelamangala_page_2.jpg" alt="SaladO Menu - Signature Salads & Flavored Salads" loading="lazy" onclick="openLightbox(this.src)">
+                    </div>
+                    <div class="menu-card reveal" data-categories="bowls sandwiches">
+                        <img src="images/menu_nelamangala_page_3.jpg" alt="SaladO Menu - Rice Bowls & Flavored Burgers" loading="lazy" onclick="openLightbox(this.src)">
+                    </div>
+                    <div class="menu-card reveal" data-categories="salads">
+                        <img src="images/menu_nelamangala_page_4.jpg" alt="SaladO Menu - Classic Salads & Fat Free Dressings" loading="lazy" onclick="openLightbox(this.src)">
+                    </div>
+                    <div class="menu-card reveal" data-categories="sandwiches">
+                        <img src="images/menu_nelamangala_page_5.jpg" alt="SaladO Menu - Sandwiches, Pizzas & Wraps" loading="lazy" onclick="openLightbox(this.src)">
+                    </div>
+                    <div class="menu-card reveal" data-categories="juices smoothies">
+                        <img src="images/menu_nelamangala_page_6.jpg" alt="SaladO Menu - Cold Pressed Juices & Detox Drinks" loading="lazy" onclick="openLightbox(this.src)">
+                    </div>
+                    <div class="menu-card reveal" data-categories="smoothies juices">
+                        <img src="images/menu_nelamangala_page_7.jpg" alt="SaladO Menu - Smoothies & Thick Shakes" loading="lazy" onclick="openLightbox(this.src)">
+                    </div>
+                    <div class="menu-card reveal" data-categories="salads bowls smoothies juices sandwiches">
+                        <img src="images/menu_nelamangala_page_8.jpg" alt="SaladO Menu - Back Cover" loading="lazy" onclick="openLightbox(this.src)">
+                    </div>
                 </div>
-                <div class="menu-card reveal" data-categories="salads bowls">
-                    <img src="images/menu_nelamangala_page_2.jpg" alt="SaladO Menu - Signature Salads & Flavored Salads" loading="lazy">
-                </div>
-                <div class="menu-card reveal" data-categories="bowls sandwiches">
-                    <img src="images/menu_nelamangala_page_3.jpg" alt="SaladO Menu - Rice Bowls & Flavored Burgers" loading="lazy">
-                </div>
-                <div class="menu-card reveal" data-categories="salads">
-                    <img src="images/menu_nelamangala_page_4.jpg" alt="SaladO Menu - Classic Salads & Fat Free Dressings" loading="lazy">
-                </div>
-                <div class="menu-card reveal" data-categories="sandwiches">
-                    <img src="images/menu_nelamangala_page_5.jpg" alt="SaladO Menu - Sandwiches, Pizzas & Wraps" loading="lazy">
-                </div>
-                <div class="menu-card reveal" data-categories="juices smoothies">
-                    <img src="images/menu_nelamangala_page_6.jpg" alt="SaladO Menu - Cold Pressed Juices & Detox Drinks" loading="lazy">
-                </div>
-                <div class="menu-card reveal" data-categories="smoothies juices">
-                    <img src="images/menu_nelamangala_page_7.jpg" alt="SaladO Menu - Smoothies & Thick Shakes" loading="lazy">
-                </div>
-                <div class="menu-card reveal" data-categories="salads bowls smoothies juices sandwiches">
-                    <img src="images/menu_nelamangala_page_8.jpg" alt="SaladO Menu - Back Cover" loading="lazy">
-                </div>
+                <button class="slider-btn next-btn" id="nextMenu" aria-label="Next Page"><i class="fas fa-chevron-right"></i></button>
             </div>
         </div>
     </section>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+        <span class="close-lightbox">&times;</span>
+        <img class="lightbox-content" id="lightboxImg">
+        <div id="caption"></div>
+    </div>
 
     <!-- Gallery Section -->
     <section class="section gallery" id="gallery">
