@@ -9,16 +9,26 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const SHEET_NAME = process.env.GOOGLE_SHEET_NAME || 'Sheet1';
-const SHEET_ID = process.env.GOOGLE_SHEET_ID;
+const SHEET_ID = process.env.GOOGLE_SHEET_ID || process.env.SPREADSHEET_ID;
+const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY;
 const SMS_GATEWAY_URL = process.env.SMS_GATEWAY_URL;
 
 app.use(cors());
 app.use(express.json());
 
-const REQUIRED_ENV_VARS = ['GOOGLE_CLIENT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'GOOGLE_SHEET_ID'];
-
 function validateEnv() {
-  const missing = REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
+  const missing = [];
+  if (!GOOGLE_CLIENT_EMAIL) {
+    missing.push('GOOGLE_CLIENT_EMAIL or GOOGLE_SERVICE_ACCOUNT_EMAIL');
+  }
+  if (!GOOGLE_PRIVATE_KEY) {
+    missing.push('GOOGLE_PRIVATE_KEY');
+  }
+  if (!SHEET_ID) {
+    missing.push('GOOGLE_SHEET_ID or SPREADSHEET_ID');
+  }
+
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
@@ -29,8 +39,8 @@ async function getSheetsClient() {
 
   const auth = new google.auth.GoogleAuth({
     credentials: {
-      client_email: process.env.GOOGLE_CLIENT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
+      client_email: GOOGLE_CLIENT_EMAIL,
+      private_key: GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
     },
     scopes: ['https://www.googleapis.com/auth/spreadsheets']
   });
