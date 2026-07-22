@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Salado Cafe Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen">
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <div class="bg-white shadow-md rounded-xl p-6">
+      <div class="flex items-center justify-between gap-4 mb-6">
+        <h1 class="text-2xl font-bold text-slate-800">Subscription Dashboard</h1>
+        <button id="refreshBtn" class="px-4 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700">Refresh</button>
+      </div>
+
+      <p id="statusMessage" class="text-sm text-slate-500 mb-4">Loading subscriptions...</p>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full border border-slate-200 rounded-lg overflow-hidden">
+          <thead class="bg-slate-800 text-white">
+            <tr>
+              <th class="text-left px-4 py-3 text-sm font-semibold">Row</th>
+              <th class="text-left px-4 py-3 text-sm font-semibold">Customer Name</th>
+              <th class="text-left px-4 py-3 text-sm font-semibold">Phone Number</th>
+              <th class="text-left px-4 py-3 text-sm font-semibold">Total Meals</th>
+              <th class="text-left px-4 py-3 text-sm font-semibold">Meals Remaining</th>
+              <th class="text-left px-4 py-3 text-sm font-semibold">Action</th>
+            </tr>
+          </thead>
+          <tbody id="subscriptionsTableBody" class="divide-y divide-slate-200 bg-white"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const PASSWORD = 'saladoadmin';
+      const input = prompt('Enter admin password:');
+      if (input !== PASSWORD) {
+        alert('Access denied.');
+        document.body.innerHTML = '<div class="min-h-screen flex items-center justify-center text-slate-700 font-semibold">Unauthorized access</div>';
+        return;
+      }
+
+      const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:5000'
+        : '';
+
+      const tableBody = document.getElementById('subscriptionsTableBody');
+      const statusMessage = document.getElementById('statusMessage');
+      const refreshBtn = document.getElementById('refreshBtn');
+      let subscriptions = [];
+
+      function setStatus(message, isError = false) {
+        statusMessage.textContent = message;
+        statusMessage.className = `text-sm mb-4 ${isError ? 'text-red-600' : 'text-slate-500'}`;
+      }
+
+      function renderTable() {
+        tableBody.innerHTML = '';
+
+        if (subscriptions.length === 0) {
+          tableBody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">No subscription data found.</td></tr>';
+          return;
+        }
+
+        subscriptions.forEach((sub) => {
+          const isExhausted = Number(sub.MealsRemaining) <= 0;
+          const row = document.createElement('tr');
+          row.className = 'hover:bg-slate-50';
+          row.innerHTML = `
+            <td class="px-4 py-3 text-sm text-slate-700">${sub.rowNumber}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${sub.CustomerName || ''}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${sub.PhoneNumber || ''}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${sub.TotalMeals ?? 0}</td>
+            <td class="px-4 py-3 text-sm font-semibold ${isExhausted ? 'text-red-600' : 'text-emerald-700'}">${sub.MealsRemaining ?? 0}</td>
+            <td class="px-4 py-3">
+              <button
+                class="mark-delivered px-3 py-2 text-sm rounded-lg text-white ${isExhausted ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500'}"
+                data-row="${sub.rowNumber}"
+                ${isExhausted ? 'disabled' : ''}
+              >
+                Mark Delivered
+              </button>
+            </td>
+          `;
+          tableBody.appendChild(row);
+        });
+      }
+
+      async function loadSubscriptions() {
+        try {
+          setStatus('Loading subscriptions...');
+          const response = await fetch(`${API_BASE}/api/subscriptions`);
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Failed to fetch subscriptions');
+          }
+
+          subscriptions = Array.isArray(result.data) ? result.data : [];
+          renderTable();
+          setStatus(`Loaded ${subscriptions.length} subscription(s).`);
+        } catch (error) {
+          setStatus(error.message, true);
+        }
+      }
+
+      async function markDelivered(rowNumber) {
+        const rowData = subscriptions.find((item) => Number(item.rowNumber) === Number(rowNumber));
+        if (!rowData) return;
+
+        try {
+          const response = await fetch(`${API_BASE}/api/mark-delivered`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              rowNumber: rowData.rowNumber,
+              CustomerName: rowData.CustomerName,
+              PhoneNumber: rowData.PhoneNumber,
+              MealsRemaining: rowData.MealsRemaining
+            })
+          });
+
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Failed to mark delivered');
+          }
+
+          rowData.MealsRemaining = Number(result.data?.MealsRemaining ?? rowData.MealsRemaining - 1);
+          renderTable();
+          setStatus(`Marked delivered for ${rowData.CustomerName}.`);
+          alert('Delivery confirmed. SMS gateway triggered successfully.');
+        } catch (error) {
+          alert(`Failed to mark delivered: ${error.message}`);
+        }
+      }
+
+      tableBody.addEventListener('click', async (event) => {
+        const button = event.target.closest('.mark-delivered');
+        if (!button) return;
+
+        if (button.disabled) return;
+        button.disabled = true;
+        button.textContent = 'Processing...';
+
+        await markDelivered(button.dataset.row);
+      });
+
+      refreshBtn.addEventListener('click', loadSubscriptions);
+      loadSubscriptions();
+    })();
+  </script>
+</body>
+</html>
