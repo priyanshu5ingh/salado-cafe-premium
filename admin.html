@@ -55,10 +55,6 @@
         return;
       }
 
-      const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'http://localhost:5000'
-        : '';
-
       const tableBody = document.getElementById('subscriptionsTableBody');
       const statusMessage = document.getElementById('statusMessage');
       const refreshBtn = document.getElementById('refreshBtn');
@@ -103,7 +99,7 @@
       async function loadSubscriptions() {
         try {
           setStatus('Loading subscriptions...');
-          const response = await fetch(`${API_BASE}/api/subscriptions`);
+          const response = await fetch('https://your-new-render-url.onrender.com/api/subscriptions');
           const result = await response.json();
 
           if (!response.ok || !result.success) {
@@ -124,7 +120,7 @@
         let keepDisabled = false;
 
         try {
-          const response = await fetch(`${API_BASE}/api/mark-delivered`, {
+          const response = await fetch('https://your-new-render-url.onrender.com/api/mark-delivered', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
