@@ -5,30 +5,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Salado Cafe Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes greenFlash {
+      0% { background-color: rgba(16, 185, 129, 0.45); }
+      100% { background-color: transparent; }
+    }
+    .flash-success {
+      animation: greenFlash 0.8s ease-out;
+    }
+  </style>
 </head>
-<body class="bg-slate-100 min-h-screen">
-  <main class="max-w-6xl mx-auto px-4 py-8">
-    <div class="bg-white shadow-md rounded-xl p-6">
-      <div class="flex items-center justify-between gap-4 mb-6">
-        <h1 class="text-2xl font-bold text-slate-800">Subscription Dashboard</h1>
-        <button id="refreshBtn" class="px-4 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700">Refresh</button>
+<body class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-slate-100">
+  <main class="max-w-7xl mx-auto px-4 py-10">
+    <div class="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl shadow-black/30 p-6 md:p-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-emerald-300/80">Cafe Salado Premium</p>
+          <h1 class="text-3xl font-semibold text-white">Subscription Control Center</h1>
+        </div>
+        <button id="refreshBtn" class="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-semibold hover:bg-emerald-400 transition-colors">Refresh</button>
       </div>
 
-      <p id="statusMessage" class="text-sm text-slate-500 mb-4">Loading subscriptions...</p>
+      <p id="statusMessage" class="text-sm text-slate-300 mb-4">Loading subscriptions...</p>
 
-      <div class="overflow-x-auto">
-        <table class="min-w-full border border-slate-200 rounded-lg overflow-hidden">
-          <thead class="bg-slate-800 text-white">
+      <div class="overflow-x-auto rounded-2xl border border-white/10">
+        <table class="min-w-full">
+          <thead class="bg-white/10 text-slate-100">
             <tr>
-              <th class="text-left px-4 py-3 text-sm font-semibold">Row</th>
-              <th class="text-left px-4 py-3 text-sm font-semibold">Customer Name</th>
-              <th class="text-left px-4 py-3 text-sm font-semibold">Phone Number</th>
-              <th class="text-left px-4 py-3 text-sm font-semibold">Total Meals</th>
-              <th class="text-left px-4 py-3 text-sm font-semibold">Meals Remaining</th>
-              <th class="text-left px-4 py-3 text-sm font-semibold">Action</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Customer Name</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Email Address</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Total Meals</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Meals Remaining</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Action</th>
             </tr>
           </thead>
-          <tbody id="subscriptionsTableBody" class="divide-y divide-slate-200 bg-white"></tbody>
+          <tbody id="subscriptionsTableBody" class="divide-y divide-white/10 bg-slate-950/20"></tbody>
         </table>
       </div>
     </div>
@@ -55,30 +66,29 @@
 
       function setStatus(message, isError = false) {
         statusMessage.textContent = message;
-        statusMessage.className = `text-sm mb-4 ${isError ? 'text-red-600' : 'text-slate-500'}`;
+        statusMessage.className = `text-sm mb-4 ${isError ? 'text-rose-300' : 'text-slate-300'}`;
       }
 
       function renderTable() {
         tableBody.innerHTML = '';
 
         if (subscriptions.length === 0) {
-          tableBody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">No subscription data found.</td></tr>';
+          tableBody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-slate-300">No subscription data found.</td></tr>';
           return;
         }
 
         subscriptions.forEach((sub) => {
           const isExhausted = Number(sub.MealsRemaining) <= 0;
           const row = document.createElement('tr');
-          row.className = 'hover:bg-slate-50';
+          row.className = 'hover:bg-white/5 transition-colors';
           row.innerHTML = `
-            <td class="px-4 py-3 text-sm text-slate-700">${sub.rowNumber}</td>
-            <td class="px-4 py-3 text-sm text-slate-700">${sub.CustomerName || ''}</td>
-            <td class="px-4 py-3 text-sm text-slate-700">${sub.PhoneNumber || ''}</td>
-            <td class="px-4 py-3 text-sm text-slate-700">${sub.TotalMeals ?? 0}</td>
-            <td class="px-4 py-3 text-sm font-semibold ${isExhausted ? 'text-red-600' : 'text-emerald-700'}">${sub.MealsRemaining ?? 0}</td>
+            <td class="px-4 py-3 text-sm text-slate-100">${sub.CustomerName || ''}</td>
+            <td class="px-4 py-3 text-sm text-slate-300">${sub.EmailAddress || ''}</td>
+            <td class="px-4 py-3 text-sm text-slate-200">${sub.TotalMeals ?? 0}</td>
+            <td class="meals-remaining-cell px-4 py-3 text-sm font-semibold ${isExhausted ? 'text-rose-300' : 'text-emerald-300'}">${sub.MealsRemaining ?? 0}</td>
             <td class="px-4 py-3">
               <button
-                class="mark-delivered px-3 py-2 text-sm rounded-lg text-white ${isExhausted ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500'}"
+                class="mark-delivered px-3 py-2 text-sm rounded-xl font-semibold text-slate-950 disabled:cursor-not-allowed ${isExhausted ? 'bg-slate-500/50 text-slate-300' : 'bg-emerald-400 hover:bg-emerald-300'}"
                 data-row="${sub.rowNumber}"
                 ${isExhausted ? 'disabled' : ''}
               >
@@ -108,9 +118,10 @@
         }
       }
 
-      async function markDelivered(rowNumber) {
+      async function markDelivered(rowNumber, button) {
         const rowData = subscriptions.find((item) => Number(item.rowNumber) === Number(rowNumber));
         if (!rowData) return;
+        let keepDisabled = false;
 
         try {
           const response = await fetch(`${API_BASE}/api/mark-delivered`, {
@@ -121,7 +132,7 @@
             body: JSON.stringify({
               rowNumber: rowData.rowNumber,
               CustomerName: rowData.CustomerName,
-              PhoneNumber: rowData.PhoneNumber,
+              EmailAddress: rowData.EmailAddress,
               MealsRemaining: rowData.MealsRemaining
             })
           });
@@ -131,12 +142,27 @@
             throw new Error(result.message || 'Failed to mark delivered');
           }
 
-          rowData.MealsRemaining = Number(result.data?.MealsRemaining ?? rowData.MealsRemaining - 1);
-          renderTable();
+          rowData.MealsRemaining = Number(result.data?.MealsRemaining ?? Math.max(rowData.MealsRemaining - 1, 0));
+          const tableRow = button.closest('tr');
+          const remainingCell = tableRow?.querySelector('.meals-remaining-cell');
+          if (remainingCell) {
+            remainingCell.textContent = String(rowData.MealsRemaining);
+            remainingCell.classList.remove('text-rose-300');
+            remainingCell.classList.add(rowData.MealsRemaining <= 0 ? 'text-rose-300' : 'text-emerald-300');
+            remainingCell.classList.add('flash-success');
+            setTimeout(() => remainingCell.classList.remove('flash-success'), 800);
+          }
+          if (rowData.MealsRemaining <= 0) {
+            keepDisabled = true;
+            button.classList.add('bg-slate-500/50', 'text-slate-300');
+            button.classList.remove('bg-emerald-400', 'hover:bg-emerald-300');
+          }
           setStatus(`Marked delivered for ${rowData.CustomerName}.`);
-          alert('Delivery confirmed. SMS gateway triggered successfully.');
         } catch (error) {
-          alert(`Failed to mark delivered: ${error.message}`);
+          setStatus(`Failed for ${rowData.CustomerName}: ${error.message}`, true);
+        } finally {
+          button.disabled = keepDisabled;
+          button.textContent = keepDisabled ? 'Delivered' : 'Mark Delivered';
         }
       }
 
@@ -146,9 +172,9 @@
 
         if (button.disabled) return;
         button.disabled = true;
-        button.textContent = 'Processing...';
+        button.textContent = 'Sending...';
 
-        await markDelivered(button.dataset.row);
+        await markDelivered(button.dataset.row, button);
       });
 
       refreshBtn.addEventListener('click', loadSubscriptions);
