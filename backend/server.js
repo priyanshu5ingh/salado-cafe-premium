@@ -68,7 +68,7 @@ async function getSubscriptions() {
   const sheets = await getSheetsClient();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!A2:D`
+    range: `${SHEET_NAME}!A2:F`
   });
 
   const rows = response.data.values || [];
@@ -78,7 +78,9 @@ async function getSubscriptions() {
     CustomerName: row[0] || '',
     EmailAddress: row[1] || '',
     TotalMeals: Number(row[2] || 0),
-    MealsRemaining: Number(row[3] || 0)
+    MealsRemaining: Number(row[3] || 0),
+    StartDate: row[4] || '',
+    MealPrice: row[5] || ''
   }));
 }
 
@@ -139,12 +141,26 @@ app.get('/api/subscriptions', async (req, res) => {
 
 app.post('/api/mark-delivered', async (req, res) => {
   try {
-    const { rowNumber, CustomerName, EmailAddress, MealsRemaining } = req.body;
+    const {
+      rowNumber,
+      CustomerName,
+      EmailAddress,
+      MealsRemaining,
+      TotalMeals,
+      StartDate,
+      MealPrice
+    } = req.body;
 
-    if (!rowNumber || !CustomerName || !EmailAddress) {
+    const requiredFields = ['rowNumber', 'CustomerName', 'EmailAddress', 'MealsRemaining', 'TotalMeals', 'StartDate', 'MealPrice'];
+    const missingFields = requiredFields.filter((fieldName) => {
+      const fieldValue = req.body[fieldName];
+      return fieldValue === undefined || fieldValue === null || fieldValue === '';
+    });
+
+    if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'rowNumber, CustomerName, and EmailAddress are required'
+        message: `Missing required fields: ${missingFields.join(', ')}`
       });
     }
 
@@ -154,17 +170,24 @@ app.post('/api/mark-delivered', async (req, res) => {
       ? updatedMealsRemaining
       : Math.max(priorMeals - 1, 0);
     const safeCustomerName = escapeHtml(CustomerName);
+    const safeStartDate = escapeHtml(StartDate);
+    const safeMealPrice = escapeHtml(MealPrice);
+    const safeTotalMeals = Number(TotalMeals) || 0;
 
     const htmlBody = `
-      <div style="font-family: Arial, sans-serif; background: #f6f8fb; padding: 24px;">
-        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb;">
-          <div style="background: #0f172a; color: #ffffff; padding: 20px 24px;">
-            <h2 style="margin: 0; font-size: 22px;">Cafe Salado Delivery Update</h2>
+      <div style="font-family: Arial, Helvetica, sans-serif; background: #f8fafc; padding: 28px 16px;">
+        <div style="max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);">
+          <div style="padding: 22px 24px; border-bottom: 1px solid #e2e8f0; background: linear-gradient(135deg, #0f172a, #1e293b); color: #f8fafc;">
+            <h2 style="margin: 0; font-size: 22px; font-weight: 700;">Cafe Salado Daily Delivery Receipt</h2>
           </div>
-          <div style="padding: 24px; color: #111827; line-height: 1.6;">
-            <p style="margin: 0 0 12px;">Hello ${safeCustomerName},</p>
-            <p style="margin: 0 0 12px;">your meal for today has been delivered to you in Nelamangala!</p>
-            <p style="margin: 0;"><strong>You have ${newMealsRemaining} meals left in your subscription.</strong></p>
+          <div style="padding: 24px; color: #0f172a; line-height: 1.6;">
+            <p style="margin: 0 0 16px; font-size: 15px;">Hello ${safeCustomerName}, your meal for today has been successfully delivered!</p>
+            <div style="border: 1px solid #dbeafe; background: #f8fbff; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+              <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Status:</strong> Delivered Today</p>
+              <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Subscription Started:</strong> ${safeStartDate}</p>
+              <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Cost per Meal:</strong> ${safeMealPrice}</p>
+            </div>
+            <p style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">You have ${newMealsRemaining} out of ${safeTotalMeals} meals remaining.</p>
           </div>
         </div>
       </div>
@@ -174,7 +197,7 @@ app.post('/api/mark-delivered', async (req, res) => {
     const mailResult = await transporter.sendMail({
       from: EMAIL_USER,
       to: EmailAddress,
-      subject: 'Your Cafe Salado Meal Delivery',
+      subject: '✅ Cafe Salado: Your Meal is Delivered!',
       html: htmlBody
     });
     console.log(`[mark-delivered] Email sent successfully: ${mailResult.messageId}`);
@@ -186,7 +209,10 @@ app.post('/api/mark-delivered', async (req, res) => {
         rowNumber,
         CustomerName,
         EmailAddress,
-        MealsRemaining: newMealsRemaining
+        MealsRemaining: newMealsRemaining,
+        TotalMeals: safeTotalMeals,
+        StartDate,
+        MealPrice
       }
     });
   } catch (error) {
