@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const axios = require('axios');
+const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
 
 dotenv.config();
@@ -12,7 +12,8 @@ const SHEET_NAME = process.env.GOOGLE_SHEET_NAME || 'Sheet1';
 const SHEET_ID = process.env.GOOGLE_SHEET_ID || process.env.SPREADSHEET_ID;
 const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY;
-const SMS_GATEWAY_URL = process.env.SMS_GATEWAY_URL;
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_APP_PASSWORD = process.env.EMAIL_APP_PASSWORD;
 
 app.use(cors());
 app.use(express.json());
@@ -28,10 +29,24 @@ function validateEnv() {
   if (!SHEET_ID) {
     missing.push('GOOGLE_SHEET_ID or SPREADSHEET_ID');
   }
+  if (!EMAIL_USER) {
+    missing.push('EMAIL_USER');
+  }
+  if (!EMAIL_APP_PASSWORD) {
+    missing.push('EMAIL_APP_PASSWORD');
+  }
 
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: EMAIL_USER,
+      pass: EMAIL_APP_PASSWORD
+    }
+  });
 }
 
 async function getSheetsClient() {
@@ -61,7 +76,7 @@ async function getSubscriptions() {
   return rows.map((row, index) => ({
     rowNumber: index + 2,
     CustomerName: row[0] || '',
-    PhoneNumber: row[1] || '',
+    EmailAddress: row[1] || '',
     TotalMeals: Number(row[2] || 0),
     MealsRemaining: Number(row[3] || 0)
   }));
@@ -115,44 +130,57 @@ app.get('/api/subscriptions', async (req, res) => {
 
 app.post('/api/mark-delivered', async (req, res) => {
   try {
-    const { rowNumber, CustomerName, PhoneNumber, MealsRemaining } = req.body;
+    const { rowNumber, CustomerName, EmailAddress, MealsRemaining } = req.body;
 
-    if (!rowNumber || !CustomerName || !PhoneNumber) {
+    if (!rowNumber || !CustomerName || !EmailAddress) {
       return res.status(400).json({
         success: false,
-        message: 'rowNumber, CustomerName, and PhoneNumber are required'
+        message: 'rowNumber, CustomerName, and EmailAddress are required'
       });
     }
 
     const updatedMealsRemaining = await deductMeal(rowNumber);
+    const priorMeals = Number(MealsRemaining) || 0;
+    const newMealsRemaining = Number.isFinite(updatedMealsRemaining)
+      ? updatedMealsRemaining
+      : Math.max(priorMeals - 1, 0);
 
-    if (!SMS_GATEWAY_URL) {
-      throw new Error('SMS_GATEWAY_URL is not configured');
-    }
+    const htmlBody = `
+      <div style="font-family: Arial, sans-serif; background: #f6f8fb; padding: 24px;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb;">
+          <div style="background: #0f172a; color: #ffffff; padding: 20px 24px;">
+            <h2 style="margin: 0; font-size: 22px;">Cafe Salado Delivery Update</h2>
+          </div>
+          <div style="padding: 24px; color: #111827; line-height: 1.6;">
+            <p style="margin: 0 0 12px;">Hello ${CustomerName},</p>
+            <p style="margin: 0 0 12px;">your meal for today has been delivered to you in Nelamangala!</p>
+            <p style="margin: 0;"><strong>You have ${newMealsRemaining} meals left in your subscription.</strong></p>
+          </div>
+        </div>
+      </div>
+    `;
 
-    const priorMeals = Number(MealsRemaining);
-    const fallbackMeals = Number.isFinite(priorMeals) && priorMeals > 0
-      ? priorMeals - 1
-      : updatedMealsRemaining;
-
-    const message = `Hi ${CustomerName}, your meal for today has been delivered. Meals remaining: ${updatedMealsRemaining ?? fallbackMeals}.`;
-
-    await axios.post(SMS_GATEWAY_URL, {
-      to: PhoneNumber,
-      message
+    console.log(`[mark-delivered] Sending email to ${EmailAddress} for ${CustomerName}`);
+    const mailResult = await transporter.sendMail({
+      from: EMAIL_USER,
+      to: EmailAddress,
+      subject: 'Your Cafe Salado Meal Delivery',
+      html: htmlBody
     });
+    console.log(`[mark-delivered] Email sent successfully: ${mailResult.messageId}`);
 
     return res.json({
       success: true,
-      message: 'Meal marked as delivered and SMS notification sent',
+      message: 'Meal marked as delivered and email notification sent',
       data: {
         rowNumber,
         CustomerName,
-        PhoneNumber,
-        MealsRemaining: updatedMealsRemaining
+        EmailAddress,
+        MealsRemaining: newMealsRemaining
       }
     });
   } catch (error) {
+    console.error('[mark-delivered] Error while processing delivery notification:', error);
     return res.status(500).json({
       success: false,
       message: 'Failed to mark meal as delivered',
