@@ -39,15 +39,15 @@ function validateEnv() {
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
-
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: EMAIL_USER,
-      pass: EMAIL_APP_PASSWORD
-    }
-  });
 }
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: EMAIL_USER,
+    pass: EMAIL_APP_PASSWORD
+  }
+});
 
 async function getSheetsClient() {
   validateEnv();
@@ -115,6 +115,15 @@ async function deductMeal(rowNumber) {
   return updatedValue;
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 app.get('/api/subscriptions', async (req, res) => {
   try {
     const subscriptions = await getSubscriptions();
@@ -144,6 +153,7 @@ app.post('/api/mark-delivered', async (req, res) => {
     const newMealsRemaining = Number.isFinite(updatedMealsRemaining)
       ? updatedMealsRemaining
       : Math.max(priorMeals - 1, 0);
+    const safeCustomerName = escapeHtml(CustomerName);
 
     const htmlBody = `
       <div style="font-family: Arial, sans-serif; background: #f6f8fb; padding: 24px;">
@@ -152,7 +162,7 @@ app.post('/api/mark-delivered', async (req, res) => {
             <h2 style="margin: 0; font-size: 22px;">Cafe Salado Delivery Update</h2>
           </div>
           <div style="padding: 24px; color: #111827; line-height: 1.6;">
-            <p style="margin: 0 0 12px;">Hello ${CustomerName},</p>
+            <p style="margin: 0 0 12px;">Hello ${safeCustomerName},</p>
             <p style="margin: 0 0 12px;">your meal for today has been delivered to you in Nelamangala!</p>
             <p style="margin: 0;"><strong>You have ${newMealsRemaining} meals left in your subscription.</strong></p>
           </div>
