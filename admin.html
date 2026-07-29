@@ -62,6 +62,22 @@
       const refreshBtn = document.getElementById('refreshBtn');
       let subscriptions = [];
 
+      function getTodayFormatted() {
+        const today = new Date();
+        const day = String(today.getDate()).padStart(2, '0');
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${day}-${months[today.getMonth()]}-${today.getFullYear()}`;
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
       function setStatus(message, isError = false) {
         statusMessage.textContent = message;
         statusMessage.className = `text-sm mb-4 ${isError ? 'text-rose-300' : 'text-slate-300'}`;
@@ -75,29 +91,133 @@
           return;
         }
 
+        const todayFormatted = getTodayFormatted();
+
         subscriptions.forEach((sub) => {
           const isExhausted = Number(sub.MealsRemaining) <= 0;
+          const deliveredToday = sub.LastDeliveredDate === todayFormatted;
+          const disableDelivered = isExhausted || deliveredToday;
           const row = document.createElement('tr');
           row.className = 'hover:bg-white/5 transition-colors';
+          row.dataset.rowNumber = sub.rowNumber;
           row.innerHTML = `
-            <td class="px-4 py-3 text-sm text-slate-100">${sub.CustomerName || ''}</td>
-            <td class="px-4 py-3 text-sm text-slate-300">${sub.EmailAddress || ''}</td>
-            <td class="px-4 py-3 text-sm text-slate-200">${sub.TotalMeals ?? 0}</td>
-            <td class="meals-remaining-cell px-4 py-3 text-sm font-semibold ${isExhausted ? 'text-rose-300' : 'text-emerald-300'}">${sub.MealsRemaining ?? 0}</td>
-            <td class="px-4 py-3 text-sm text-slate-300">${sub.StartDate || '-'}</td>
-            <td class="px-4 py-3 text-sm text-slate-300">${sub.MealPrice || '-'}</td>
+            <td class="cell-name px-4 py-3 text-sm text-slate-100">${escapeHtml(sub.CustomerName || '')}</td>
+            <td class="cell-email px-4 py-3 text-sm text-slate-300">${escapeHtml(sub.EmailAddress || '')}</td>
+            <td class="cell-total px-4 py-3 text-sm text-slate-200">${sub.TotalMeals ?? 0}</td>
+            <td class="meals-remaining-cell cell-remaining px-4 py-3 text-sm font-semibold ${isExhausted ? 'text-rose-300' : 'text-emerald-300'}">${sub.MealsRemaining ?? 0}</td>
+            <td class="cell-startdate px-4 py-3 text-sm text-slate-300">${escapeHtml(sub.StartDate || '-')}</td>
+            <td class="cell-price px-4 py-3 text-sm text-slate-300">${escapeHtml(sub.MealPrice || '-')}</td>
             <td class="px-4 py-3">
               <button
-                class="mark-delivered px-3 py-2 text-sm rounded-xl font-semibold text-slate-950 disabled:cursor-not-allowed ${isExhausted ? 'bg-slate-500/50 text-slate-300' : 'bg-emerald-400 hover:bg-emerald-300'}"
+                class="mark-delivered px-3 py-2 text-sm rounded-xl font-semibold text-slate-950 disabled:cursor-not-allowed ${disableDelivered ? 'bg-slate-500/50 text-slate-300' : 'bg-emerald-400 hover:bg-emerald-300'}"
                 data-row="${sub.rowNumber}"
-                ${isExhausted ? 'disabled' : ''}
+                ${disableDelivered ? 'disabled' : ''}
               >
-                Mark Delivered
+                ${deliveredToday ? 'Delivered Today' : (isExhausted ? 'Delivered' : 'Mark Delivered')}
+              </button>
+              <button
+                class="edit-btn px-3 py-2 text-sm rounded-xl font-semibold bg-indigo-500 hover:bg-indigo-400 text-white ml-2"
+                data-row="${sub.rowNumber}"
+              >
+                Edit
               </button>
             </td>
           `;
           tableBody.appendChild(row);
         });
+      }
+
+      function enterEditMode(rowNumber) {
+        const row = tableBody.querySelector(`tr[data-row-number="${rowNumber}"]`);
+        if (!row) return;
+
+        const nameCell = row.querySelector('.cell-name');
+        const emailCell = row.querySelector('.cell-email');
+        const totalCell = row.querySelector('.cell-total');
+        const remainingCell = row.querySelector('.cell-remaining');
+        const startDateCell = row.querySelector('.cell-startdate');
+        const priceCell = row.querySelector('.cell-price');
+        const editBtn = row.querySelector('.edit-btn');
+        const deliverBtn = row.querySelector('.mark-delivered');
+
+        const currentName = nameCell.textContent;
+        const currentEmail = emailCell.textContent;
+        const currentTotal = totalCell.textContent;
+        const currentRemaining = remainingCell.textContent;
+        const currentStartDate = startDateCell.textContent === '-' ? '' : startDateCell.textContent;
+        const currentPrice = priceCell.textContent === '-' ? '' : priceCell.textContent;
+
+        nameCell.innerHTML = `<input type="text" class="edit-input bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 w-full" value="${escapeHtml(currentName)}">`;
+        emailCell.innerHTML = `<input type="text" class="edit-input bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 w-full" value="${escapeHtml(currentEmail)}">`;
+        totalCell.innerHTML = `<input type="number" class="edit-input bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 w-full" value="${currentTotal}">`;
+        remainingCell.innerHTML = `<input type="number" class="edit-input bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 w-full" value="${currentRemaining}">`;
+        startDateCell.innerHTML = `<input type="text" class="edit-input bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 w-full" value="${escapeHtml(currentStartDate)}">`;
+        priceCell.innerHTML = `<input type="text" class="edit-input bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 w-full" value="${escapeHtml(currentPrice)}">`;
+
+        deliverBtn.disabled = true;
+        deliverBtn.className = 'mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-slate-500/50 text-slate-300 disabled:cursor-not-allowed';
+        deliverBtn.textContent = 'Editing...';
+
+        editBtn.textContent = 'Save';
+        editBtn.className = 'edit-btn px-3 py-2 text-sm rounded-xl font-semibold bg-emerald-500 hover:bg-emerald-400 text-white ml-2';
+        editBtn.dataset.editing = 'true';
+      }
+
+      async function saveEdit(rowNumber, button) {
+        const row = tableBody.querySelector(`tr[data-row-number="${rowNumber}"]`);
+        if (!row) return;
+
+        const inputs = row.querySelectorAll('.edit-input');
+        const values = Array.from(inputs).map(inp => inp.value);
+
+        const payload = {
+          rowNumber: Number(rowNumber),
+          CustomerName: values[0],
+          EmailAddress: values[1],
+          TotalMeals: Number(values[2]),
+          MealsRemaining: Number(values[3]),
+          StartDate: values[4],
+          MealPrice: values[5]
+        };
+
+        try {
+          button.disabled = true;
+          button.textContent = 'Saving...';
+
+          const response = await fetch('https://salado-cafe-premium.onrender.com/api/update-subscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Failed to update subscription');
+          }
+
+          const sub = subscriptions.find(s => Number(s.rowNumber) === Number(rowNumber));
+          if (sub) {
+            sub.CustomerName = payload.CustomerName;
+            sub.EmailAddress = payload.EmailAddress;
+            sub.TotalMeals = payload.TotalMeals;
+            sub.MealsRemaining = payload.MealsRemaining;
+            sub.StartDate = payload.StartDate;
+            sub.MealPrice = payload.MealPrice;
+          }
+
+          renderTable();
+          setStatus(`Subscription for ${payload.CustomerName} updated successfully.`);
+        } catch (error) {
+          setStatus(`Save failed: ${error.message}`, true);
+          const sub = subscriptions.find(s => Number(s.rowNumber) === Number(rowNumber));
+          const isExhausted = sub ? Number(sub.MealsRemaining) <= 0 : false;
+          const deliverBtn = row.querySelector('.mark-delivered');
+          deliverBtn.disabled = isExhausted;
+          deliverBtn.className = `mark-delivered px-3 py-2 text-sm rounded-xl font-semibold text-slate-950 disabled:cursor-not-allowed ${isExhausted ? 'bg-slate-500/50 text-slate-300' : 'bg-emerald-400 hover:bg-emerald-300'}`;
+          deliverBtn.textContent = isExhausted ? 'Delivered' : 'Mark Delivered';
+          button.disabled = false;
+          button.textContent = 'Save';
+        }
       }
 
       async function loadSubscriptions() {
@@ -146,6 +266,7 @@
           }
 
           rowData.MealsRemaining = Number(result.data?.MealsRemaining ?? Math.max(rowData.MealsRemaining - 1, 0));
+          rowData.LastDeliveredDate = getTodayFormatted();
           const tableRow = button.closest('tr');
           const remainingCell = tableRow?.querySelector('.meals-remaining-cell');
           if (remainingCell) {
@@ -160,24 +281,39 @@
             button.classList.add('bg-slate-500/50', 'text-slate-300');
             button.classList.remove('bg-emerald-400', 'hover:bg-emerald-300');
           }
+          button.textContent = 'Delivered Today';
+          button.disabled = true;
           setStatus(`Marked delivered for ${rowData.CustomerName}.`);
         } catch (error) {
           setStatus(`Failed for ${rowData.CustomerName}: ${error.message}`, true);
         } finally {
-          button.disabled = keepDisabled;
-          button.textContent = keepDisabled ? 'Delivered' : 'Mark Delivered';
+          if (!keepDisabled) {
+            setTimeout(() => {
+              loadSubscriptions();
+            }, 1000);
+          }
         }
       }
 
       tableBody.addEventListener('click', async (event) => {
-        const button = event.target.closest('.mark-delivered');
-        if (!button) return;
+        const markBtn = event.target.closest('.mark-delivered');
+        if (markBtn) {
+          if (markBtn.disabled) return;
+          markBtn.disabled = true;
+          markBtn.textContent = 'Sending...';
+          await markDelivered(markBtn.dataset.row, markBtn);
+          return;
+        }
 
-        if (button.disabled) return;
-        button.disabled = true;
-        button.textContent = 'Sending...';
-
-        await markDelivered(button.dataset.row, button);
+        const editBtn = event.target.closest('.edit-btn');
+        if (editBtn) {
+          const rowNumber = editBtn.dataset.row;
+          if (editBtn.dataset.editing === 'true') {
+            await saveEdit(rowNumber, editBtn);
+          } else {
+            enterEditMode(rowNumber);
+          }
+        }
       });
 
       refreshBtn.addEventListener('click', loadSubscriptions);

@@ -59,7 +59,7 @@ async function getSubscriptions() {
   const sheets = await getSheetsClient();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!A2:F`
+    range: `${SHEET_NAME}!A2:G`
   });
 
   const rows = response.data.values || [];
@@ -71,7 +71,8 @@ async function getSubscriptions() {
     TotalMeals: Number(row[2] || 0),
     MealsRemaining: Number(row[3] || 0),
     StartDate: row[4] || '',
-    MealPrice: row[5] || ''
+    MealPrice: row[5] || '',
+    LastDeliveredDate: row[6] || ''
   }));
 }
 
@@ -156,6 +157,24 @@ app.post('/api/mark-delivered', async (req, res) => {
     }
 
     const updatedMealsRemaining = await deductMeal(rowNumber);
+
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[today.getMonth()];
+    const year = today.getFullYear();
+    const todayFormatted = `${day}-${month}-${year}`;
+
+    const sheets = await getSheetsClient();
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!G${rowNumber}`,
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [[todayFormatted]]
+      }
+    });
+
     const priorMeals = Number(MealsRemaining) || 0;
     const newMealsRemaining = Number.isFinite(updatedMealsRemaining)
       ? updatedMealsRemaining
@@ -174,11 +193,14 @@ app.post('/api/mark-delivered', async (req, res) => {
           <div style="padding: 24px; color: #0f172a; line-height: 1.6;">
             <p style="margin: 0 0 16px; font-size: 15px;">Hello ${safeCustomerName}, your meal for today has been successfully delivered!</p>
             <div style="border: 1px solid #dbeafe; background: #f8fbff; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-              <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Status:</strong> Delivered Today</p>
+              <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Status:</strong> Delivered on ${todayFormatted}</p>
               <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Subscription Started:</strong> ${safeStartDate}</p>
               <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Cost per Meal:</strong> ${safeMealPrice}</p>
             </div>
             <p style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">You have ${newMealsRemaining} out of ${safeTotalMeals} meals remaining.</p>
+            <div style="margin-top: 24px; padding: 16px; border: 1px solid #fde68a; background: #fffbeb; border-radius: 12px;">
+              <p style="margin: 0; font-size: 14px; color: #92400e; line-height: 1.5;">🌟 Enjoying your meals? Share the love! Show this email at Cafe Salado for 10% off any in-store coffee or pastry. Follow us on Instagram @CafeSalado for daily fresh updates!</p>
+            </div>
           </div>
         </div>
       </div>
@@ -235,6 +257,48 @@ app.post('/api/mark-delivered', async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to mark meal as delivered',
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/update-subscription', async (req, res) => {
+  try {
+    const { rowNumber, CustomerName, EmailAddress, TotalMeals, MealsRemaining, StartDate, MealPrice } = req.body;
+
+    const requiredFields = ['rowNumber', 'CustomerName', 'EmailAddress', 'TotalMeals', 'MealsRemaining', 'StartDate', 'MealPrice'];
+    const missingFields = requiredFields.filter((fieldName) => {
+      const fieldValue = req.body[fieldName];
+      return fieldValue === undefined || fieldValue === null || fieldValue === '';
+    });
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+
+    const sheets = await getSheetsClient();
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A${rowNumber}:F${rowNumber}`,
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [[CustomerName, EmailAddress, TotalMeals, MealsRemaining, StartDate, MealPrice]]
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Subscription updated successfully',
+      data: { rowNumber, CustomerName, EmailAddress, TotalMeals, MealsRemaining, StartDate, MealPrice }
+    });
+  } catch (error) {
+    console.error('[update-subscription] Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update subscription',
       error: error.message
     });
   }
