@@ -42,7 +42,9 @@ function validateEnv() {
 }
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: EMAIL_USER,
     pass: EMAIL_APP_PASSWORD
@@ -194,13 +196,22 @@ app.post('/api/mark-delivered', async (req, res) => {
     `;
 
     console.log(`[mark-delivered] Sending email to ${EmailAddress} for ${CustomerName}`);
-    const mailResult = await transporter.sendMail({
-      from: EMAIL_USER,
-      to: EmailAddress,
-      subject: '✅ Cafe Salado: Your Meal is Delivered!',
-      html: htmlBody
-    });
-    console.log(`[mark-delivered] Email sent successfully: ${mailResult.messageId}`);
+    try {
+      const mailResult = await transporter.sendMail({
+        from: EMAIL_USER,
+        to: EmailAddress,
+        subject: '✅ Cafe Salado: Your Meal is Delivered!',
+        html: htmlBody
+      });
+      console.log(`[mark-delivered] Email sent successfully: ${mailResult.messageId}`);
+    } catch (emailError) {
+      console.error(`[mark-delivered] Email send failed for ${EmailAddress}:`, emailError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send email notification',
+        error: emailError.message
+      });
+    }
 
     return res.json({
       success: true,
