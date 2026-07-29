@@ -118,6 +118,30 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+async function sendBrevoEmail(toEmail, toName, subject, htmlContent) {
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'api-key': process.env.BREVO_API_KEY,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      sender: { name: 'Cafe Salado', email: process.env.EMAIL_USER },
+      to: [{ email: toEmail, name: toName }],
+      subject,
+      htmlContent
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Brevo API error (${response.status}): ${errorText}`);
+  }
+
+  return response.json();
+}
+
 app.get('/api/subscriptions', async (req, res) => {
   try {
     const subscriptions = await getSubscriptions();
@@ -195,11 +219,16 @@ app.post('/api/mark-delivered', async (req, res) => {
             <div style="border: 1px solid #dbeafe; background: #f8fbff; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
               <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Status:</strong> Delivered on ${todayFormatted}</p>
               <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Subscription Started:</strong> ${safeStartDate}</p>
-              <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Cost per Meal:</strong> ${safeMealPrice}</p>
+              <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Cost of your Subscription:</strong> ${safeMealPrice}</p>
             </div>
             <p style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">You have ${newMealsRemaining} out of ${safeTotalMeals} meals remaining.</p>
             <div style="margin-top: 24px; padding: 16px; border: 1px solid #fde68a; background: #fffbeb; border-radius: 12px;">
               <p style="margin: 0; font-size: 14px; color: #92400e; line-height: 1.5;">🌟 Enjoying your meals? Share the love! Show this email at Cafe Salado for 10% off any in-store coffee or pastry. Follow us on Instagram @CafeSalado for daily fresh updates!</p>
+            </div>
+            <div style="margin-top: 25px; padding: 20px; background-color: #ecfdf5; border-radius: 12px; text-align: center;">
+              <h3 style="color: #047857; margin-top: 0;">✨ Loving your daily Salado?</h3>
+              <p style="color: #065f46; font-size: 14px;">We love making it for you! Come say hi in person—show this email at the cafe for a special surprise on us. 🥗☕</p>
+              <p style="color: #065f46; font-size: 14px; font-weight: bold;">Catch our daily fresh vibes and behind-the-scenes fun on Instagram: <a href="https://instagram.com/saladocafenelamangala" style="color: #059669;">@saladocafenelamangala</a> 📸</p>
             </div>
           </div>
         </div>
@@ -208,27 +237,7 @@ app.post('/api/mark-delivered', async (req, res) => {
 
     console.log(`[mark-delivered] Sending email to ${EmailAddress} for ${CustomerName}`);
     try {
-      const brevoResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'api-key': process.env.BREVO_API_KEY,
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify({
-          sender: { name: 'Cafe Salado', email: process.env.EMAIL_USER },
-          to: [{ email: EmailAddress, name: CustomerName }],
-          subject: '✅ Cafe Salado: Your Meal is Delivered!',
-          htmlContent: htmlBody
-        })
-      });
-
-      if (!brevoResponse.ok) {
-        const errorText = await brevoResponse.text();
-        throw new Error(`Brevo API error (${brevoResponse.status}): ${errorText}`);
-      }
-
-      const brevoData = await brevoResponse.json();
+      const brevoData = await sendBrevoEmail(EmailAddress, CustomerName, '✅ Cafe Salado: Your Meal is Delivered!', htmlBody);
       console.log(`[mark-delivered] Email sent successfully via Brevo: ${brevoData.messageId}`);
     } catch (emailError) {
       console.error(`[mark-delivered] Email send failed for ${EmailAddress}:`, emailError);
@@ -299,6 +308,129 @@ app.post('/api/update-subscription', async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to update subscription',
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/send-ended-email', async (req, res) => {
+  try {
+    const { CustomerName, EmailAddress } = req.body;
+
+    if (!CustomerName || !EmailAddress) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: CustomerName, EmailAddress'
+      });
+    }
+
+    const safeName = escapeHtml(CustomerName);
+
+    const htmlBody = `
+      <div style="font-family: Arial, Helvetica, sans-serif; background: #f8fafc; padding: 28px 16px;">
+        <div style="max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);">
+          <div style="padding: 22px 24px; border-bottom: 1px solid #e2e8f0; background: linear-gradient(135deg, #0f172a, #1e293b); color: #f8fafc;">
+            <h2 style="margin: 0; font-size: 22px; font-weight: 700;">Subscription Completed 🎉</h2>
+          </div>
+          <div style="padding: 24px; color: #0f172a; line-height: 1.6;">
+            <p style="margin: 0 0 16px; font-size: 15px;">Hello ${safeName},</p>
+            <p style="margin: 0 0 16px; font-size: 15px;">We hope you've enjoyed every meal! Your Cafe Salado subscription has now run its course and all your meals have been delivered.</p>
+            <p style="margin: 0 0 16px; font-size: 15px;">It has been an absolute pleasure serving you. We would love to have you back! To start a new subscription, simply visit us at the cafe or reach out to us, and we'll get you set up right away.</p>
+            <div style="border: 1px solid #dbeafe; background: #f8fbff; border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: center;">
+              <p style="margin: 0 0 8px; font-size: 16px; font-weight: 700; color: #0f172a;">Ready for more?</p>
+              <p style="margin: 0; font-size: 14px; color: #334155;">Come visit us at B.H Road, Binnamangala or follow us on Instagram <a href="https://instagram.com/saladocafenelamangala" style="color: #059669;">@saladocafenelamangala</a> for fresh updates!</p>
+            </div>
+            <p style="margin: 0; font-size: 14px; color: #334155;">Warm regards,<br>The Cafe Salado Team</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    console.log(`[send-ended-email] Sending ended email to ${EmailAddress} for ${CustomerName}`);
+    const brevoData = await sendBrevoEmail(EmailAddress, CustomerName, '🍽️ Your Cafe Salado Subscription has ended!', htmlBody);
+    console.log(`[send-ended-email] Email sent successfully via Brevo: ${brevoData.messageId}`);
+
+    return res.json({
+      success: true,
+      message: 'Subscription ended email sent successfully'
+    });
+  } catch (error) {
+    console.error('[send-ended-email] Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to send ended email',
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/add-subscription', async (req, res) => {
+  try {
+    const { CustomerName, EmailAddress, TotalMeals, StartDate, MealPrice } = req.body;
+
+    const requiredFields = ['CustomerName', 'EmailAddress', 'TotalMeals', 'StartDate', 'MealPrice'];
+    const missingFields = requiredFields.filter((fieldName) => {
+      const fieldValue = req.body[fieldName];
+      return fieldValue === undefined || fieldValue === null || fieldValue === '';
+    });
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+
+    const sheets = await getSheetsClient();
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!A:F`,
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [[CustomerName, EmailAddress, Number(TotalMeals), Number(TotalMeals), StartDate, MealPrice]]
+      }
+    });
+
+    const safeName = escapeHtml(CustomerName);
+    const safeTotal = Number(TotalMeals) || 0;
+    const safeStartDate = escapeHtml(StartDate);
+    const safeMealPrice = escapeHtml(MealPrice);
+
+    const htmlBody = `
+      <div style="font-family: Arial, Helvetica, sans-serif; background: #f8fafc; padding: 28px 16px;">
+        <div style="max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);">
+          <div style="padding: 22px 24px; border-bottom: 1px solid #e2e8f0; background: linear-gradient(135deg, #0f172a, #1e293b); color: #f8fafc;">
+            <h2 style="margin: 0; font-size: 22px; font-weight: 700;">Welcome to Cafe Salado! 🎉</h2>
+          </div>
+          <div style="padding: 24px; color: #0f172a; line-height: 1.6;">
+            <p style="margin: 0 0 16px; font-size: 15px;">Hello ${safeName},</p>
+            <p style="margin: 0 0 16px; font-size: 15px;">Thank you for subscribing to Cafe Salado! Your meal subscription is now active and we are thrilled to have you on board.</p>
+            <div style="border: 1px solid #dbeafe; background: #f8fbff; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+              <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Subscription Start Date:</strong> ${safeStartDate}</p>
+              <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Total Meals:</strong> ${safeTotal}</p>
+              <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Meal Price:</strong> ${safeMealPrice}</p>
+            </div>
+            <p style="margin: 0 0 16px; font-size: 15px;">We will deliver fresh, delicious meals right to you every day. Stay tuned for your daily delivery notifications!</p>
+            <p style="margin: 0; font-size: 14px; color: #334155;">Follow us on Instagram <a href="https://instagram.com/saladocafenelamangala" style="color: #059669;">@saladocafenelamangala</a> for daily fresh updates! 📸</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    console.log(`[add-subscription] Sending welcome email to ${EmailAddress} for ${CustomerName}`);
+    const brevoData = await sendBrevoEmail(EmailAddress, CustomerName, 'Welcome to Cafe Salado! Your subscription is now active 🥗', htmlBody);
+    console.log(`[add-subscription] Welcome email sent successfully via Brevo: ${brevoData.messageId}`);
+
+    return res.json({
+      success: true,
+      message: 'Subscription added and welcome email sent',
+      data: { CustomerName, EmailAddress, TotalMeals: Number(TotalMeals), MealsRemaining: Number(TotalMeals), StartDate, MealPrice }
+    });
+  } catch (error) {
+    console.error('[add-subscription] Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to add subscription',
       error: error.message
     });
   }
