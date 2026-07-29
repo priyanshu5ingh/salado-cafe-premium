@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
 
 dotenv.config();
@@ -40,16 +39,6 @@ function validateEnv() {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
 }
-
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: EMAIL_USER,
-    pass: EMAIL_APP_PASSWORD
-  }
-});
 
 async function getSheetsClient() {
   validateEnv();
@@ -197,13 +186,28 @@ app.post('/api/mark-delivered', async (req, res) => {
 
     console.log(`[mark-delivered] Sending email to ${EmailAddress} for ${CustomerName}`);
     try {
-      const mailResult = await transporter.sendMail({
-        from: EMAIL_USER,
-        to: EmailAddress,
-        subject: '✅ Cafe Salado: Your Meal is Delivered!',
-        html: htmlBody
+      const brevoResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': process.env.BREVO_API_KEY,
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: 'Cafe Salado', email: process.env.EMAIL_USER },
+          to: [{ email: EmailAddress, name: CustomerName }],
+          subject: '✅ Cafe Salado: Your Meal is Delivered!',
+          htmlContent: htmlBody
+        })
       });
-      console.log(`[mark-delivered] Email sent successfully: ${mailResult.messageId}`);
+
+      if (!brevoResponse.ok) {
+        const errorText = await brevoResponse.text();
+        throw new Error(`Brevo API error (${brevoResponse.status}): ${errorText}`);
+      }
+
+      const brevoData = await brevoResponse.json();
+      console.log(`[mark-delivered] Email sent successfully via Brevo: ${brevoData.messageId}`);
     } catch (emailError) {
       console.error(`[mark-delivered] Email send failed for ${EmailAddress}:`, emailError);
       return res.status(500).json({
