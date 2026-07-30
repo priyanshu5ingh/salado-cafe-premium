@@ -244,12 +244,12 @@ app.post('/api/mark-delivered', async (req, res) => {
             </div>
             <p style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">You have ${newMealsRemaining} out of ${safeTotalMeals} meals remaining.</p>
             <div style="margin-top: 24px; padding: 16px; border: 1px solid #fde68a; background: #fffbeb; border-radius: 12px;">
-              <p style="margin: 0; font-size: 14px; color: #92400e; line-height: 1.5;">🌟 Enjoying your meals? Share the love! Show this email at Cafe Salado for 10% off any in-store coffee or pastry. Follow us on Instagram @CafeSalado for daily fresh updates!</p>
+              <p style="margin: 0; font-size: 14px; color: #92400e; line-height: 1.5;">🌟 Enjoying your meals? Share the love! Show this email at Cafe Salado for 10% off any in-store coffee or pastry. Follow us on Instagram @salado_cafe_nelamangala for daily fresh updates!</p>
             </div>
             <div style="margin-top: 25px; padding: 20px; background-color: #ecfdf5; border-radius: 12px; text-align: center;">
               <h3 style="color: #047857; margin-top: 0;">✨ Loving your daily Salado?</h3>
               <p style="color: #065f46; font-size: 14px;">We love making it for you! Come say hi in person—show this email at the cafe for a special surprise on us. 🥗☕</p>
-              <p style="color: #065f46; font-size: 14px; font-weight: bold;">Catch our daily fresh vibes and behind-the-scenes fun on Instagram: <a href="https://instagram.com/saladocafenelamangala" style="color: #059669;">@saladocafenelamangala</a> 📸</p>
+              <p style="color: #065f46; font-size: 14px; font-weight: bold;">Catch our daily fresh vibes and behind-the-scenes fun on Instagram: <a href="https://instagram.com/salado_cafe_nelamangala" style="color: #059669;">@salado_cafe_nelamangala</a> 📸</p>
             </div>
           </div>
         </div>
@@ -361,7 +361,7 @@ app.post('/api/send-ended-email', async (req, res) => {
             <p style="margin: 0 0 16px; font-size: 15px;">It has been an absolute pleasure serving you. We would love to have you back! To start a new subscription, simply visit us at the cafe or reach out to us, and we'll get you set up right away.</p>
             <div style="border: 1px solid #dbeafe; background: #f8fbff; border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: center;">
               <p style="margin: 0 0 8px; font-size: 16px; font-weight: 700; color: #0f172a;">Ready for more?</p>
-              <p style="margin: 0; font-size: 14px; color: #334155;">Come visit us at B.H Road, Binnamangala or follow us on Instagram <a href="https://instagram.com/saladocafenelamangala" style="color: #059669;">@saladocafenelamangala</a> for fresh updates!</p>
+              <p style="margin: 0; font-size: 14px; color: #334155;">Come visit us at B.H Road, Binnamangala or follow us on Instagram <a href="https://instagram.com/salado_cafe_nelamangala" style="color: #059669;">@salado_cafe_nelamangala</a> for fresh updates!</p>
             </div>
             <p style="margin: 0; font-size: 14px; color: #334155;">Warm regards,<br>The Cafe Salado Team</p>
           </div>
@@ -434,7 +434,7 @@ app.post('/api/add-subscription', async (req, res) => {
               <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Meal Price:</strong> ${safeMealPrice}</p>
             </div>
             <p style="margin: 0 0 16px; font-size: 15px;">We will deliver fresh, delicious meals right to you every day. Stay tuned for your daily delivery notifications!</p>
-            <p style="margin: 0; font-size: 14px; color: #334155;">Follow us on Instagram <a href="https://instagram.com/saladocafenelamangala" style="color: #059669;">@saladocafenelamangala</a> for daily fresh updates! 📸</p>
+            <p style="margin: 0; font-size: 14px; color: #334155;">Follow us on Instagram <a href="https://instagram.com/salado_cafe_nelamangala" style="color: #059669;">@salado_cafe_nelamangala</a> for daily fresh updates! 📸</p>
           </div>
         </div>
       </div>
