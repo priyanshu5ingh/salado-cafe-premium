@@ -59,7 +59,7 @@ async function getSubscriptions() {
   const sheets = await getSheetsClient();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!A2:G`
+    range: `${SHEET_NAME}!A2:H`
   });
 
   const rows = response.data.values || [];
@@ -72,15 +72,18 @@ async function getSubscriptions() {
     MealsRemaining: Number(row[3] || 0),
     StartDate: row[4] || '',
     MealPrice: row[5] || '',
-    LastDeliveredDate: row[6] || ''
+    LastDeliveredDate: row[6] || '',
+    MealsPerDay: Number(row[7] || 1)
   }));
 }
 
-async function deductMeal(rowNumber) {
+async function deductMeal(rowNumber, mealsToDeduct = 1) {
   const normalizedRow = Number(rowNumber);
   if (!Number.isInteger(normalizedRow) || normalizedRow < 2) {
     throw new Error('rowNumber must be an integer >= 2');
   }
+
+  const deductAmount = Math.max(1, Number(mealsToDeduct) || 1);
 
   const sheets = await getSheetsClient();
   const targetCell = `${SHEET_NAME}!D${normalizedRow}`;
@@ -95,7 +98,7 @@ async function deductMeal(rowNumber) {
     throw new Error('No meals remaining to deduct');
   }
 
-  const updatedValue = currentValue - 1;
+  const updatedValue = Math.max(currentValue - deductAmount, 0);
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: SHEET_ID,
@@ -164,7 +167,8 @@ app.post('/api/mark-delivered', async (req, res) => {
       MealsRemaining,
       TotalMeals,
       StartDate,
-      MealPrice
+      MealPrice,
+      mealsToDeduct = 1
     } = req.body;
 
     const requiredFields = ['rowNumber', 'CustomerName', 'EmailAddress', 'MealsRemaining', 'TotalMeals', 'StartDate', 'MealPrice'];
@@ -180,7 +184,7 @@ app.post('/api/mark-delivered', async (req, res) => {
       });
     }
 
-    const updatedMealsRemaining = await deductMeal(rowNumber);
+    const updatedMealsRemaining = await deductMeal(rowNumber, mealsToDeduct);
 
     const today = new Date();
     const day = String(today.getDate()).padStart(2, '0');
@@ -202,7 +206,7 @@ app.post('/api/mark-delivered', async (req, res) => {
     const priorMeals = Number(MealsRemaining) || 0;
     const newMealsRemaining = Number.isFinite(updatedMealsRemaining)
       ? updatedMealsRemaining
-      : Math.max(priorMeals - 1, 0);
+      : Math.max(priorMeals - mealsToDeduct, 0);
     const safeCustomerName = escapeHtml(CustomerName);
     const safeStartDate = escapeHtml(StartDate);
     const safeMealPrice = escapeHtml(MealPrice);
@@ -217,7 +221,7 @@ app.post('/api/mark-delivered', async (req, res) => {
           <div style="padding: 24px; color: #0f172a; line-height: 1.6;">
             <p style="margin: 0 0 16px; font-size: 15px;">Hello ${safeCustomerName}, your meal for today has been successfully delivered!</p>
             <div style="border: 1px solid #dbeafe; background: #f8fbff; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-              <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Status:</strong> Delivered on ${todayFormatted}</p>
+              <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Status:</strong> Delivered ${mealsToDeduct} meal(s) today</p>
               <p style="margin: 0 0 8px; font-size: 14px; color: #334155;"><strong>Subscription Started:</strong> ${safeStartDate}</p>
               <p style="margin: 0; font-size: 14px; color: #334155;"><strong>Cost of your Subscription:</strong> ${safeMealPrice}</p>
             </div>
@@ -258,7 +262,8 @@ app.post('/api/mark-delivered', async (req, res) => {
         MealsRemaining: newMealsRemaining,
         TotalMeals: safeTotalMeals,
         StartDate,
-        MealPrice
+        MealPrice,
+        mealsToDeduct
       }
     });
   } catch (error) {
@@ -273,9 +278,9 @@ app.post('/api/mark-delivered', async (req, res) => {
 
 app.post('/api/update-subscription', async (req, res) => {
   try {
-    const { rowNumber, CustomerName, EmailAddress, TotalMeals, MealsRemaining, StartDate, MealPrice } = req.body;
+    const { rowNumber, CustomerName, EmailAddress, TotalMeals, MealsRemaining, StartDate, MealPrice, MealsPerDay } = req.body;
 
-    const requiredFields = ['rowNumber', 'CustomerName', 'EmailAddress', 'TotalMeals', 'MealsRemaining', 'StartDate', 'MealPrice'];
+    const requiredFields = ['rowNumber', 'CustomerName', 'EmailAddress', 'TotalMeals', 'MealsRemaining', 'StartDate', 'MealPrice', 'MealsPerDay'];
     const missingFields = requiredFields.filter((fieldName) => {
       const fieldValue = req.body[fieldName];
       return fieldValue === undefined || fieldValue === null || fieldValue === '';
@@ -291,17 +296,17 @@ app.post('/api/update-subscription', async (req, res) => {
     const sheets = await getSheetsClient();
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A${rowNumber}:F${rowNumber}`,
+      range: `${SHEET_NAME}!A${rowNumber}:H${rowNumber}`,
       valueInputOption: 'RAW',
       requestBody: {
-        values: [[CustomerName, EmailAddress, TotalMeals, MealsRemaining, StartDate, MealPrice]]
+        values: [[CustomerName, EmailAddress, TotalMeals, MealsRemaining, StartDate, MealPrice, '', MealsPerDay]]
       }
     });
 
     return res.json({
       success: true,
       message: 'Subscription updated successfully',
-      data: { rowNumber, CustomerName, EmailAddress, TotalMeals, MealsRemaining, StartDate, MealPrice }
+      data: { rowNumber, CustomerName, EmailAddress, TotalMeals, MealsRemaining, StartDate, MealPrice, MealsPerDay }
     });
   } catch (error) {
     console.error('[update-subscription] Error:', error);
@@ -366,9 +371,9 @@ app.post('/api/send-ended-email', async (req, res) => {
 
 app.post('/api/add-subscription', async (req, res) => {
   try {
-    const { CustomerName, EmailAddress, TotalMeals, StartDate, MealPrice } = req.body;
+    const { CustomerName, EmailAddress, TotalMeals, StartDate, MealPrice, MealsPerDay } = req.body;
 
-    const requiredFields = ['CustomerName', 'EmailAddress', 'TotalMeals', 'StartDate', 'MealPrice'];
+    const requiredFields = ['CustomerName', 'EmailAddress', 'TotalMeals', 'StartDate', 'MealPrice', 'MealsPerDay'];
     const missingFields = requiredFields.filter((fieldName) => {
       const fieldValue = req.body[fieldName];
       return fieldValue === undefined || fieldValue === null || fieldValue === '';
@@ -384,10 +389,10 @@ app.post('/api/add-subscription', async (req, res) => {
     const sheets = await getSheetsClient();
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!A:F`,
+      range: `${SHEET_NAME}!A:H`,
       valueInputOption: 'RAW',
       requestBody: {
-        values: [[CustomerName, EmailAddress, Number(TotalMeals), Number(TotalMeals), StartDate, MealPrice]]
+        values: [[CustomerName, EmailAddress, Number(TotalMeals), Number(TotalMeals), StartDate, MealPrice, '', Number(MealsPerDay)]]
       }
     });
 
@@ -424,7 +429,7 @@ app.post('/api/add-subscription', async (req, res) => {
     return res.json({
       success: true,
       message: 'Subscription added and welcome email sent',
-      data: { CustomerName, EmailAddress, TotalMeals: Number(TotalMeals), MealsRemaining: Number(TotalMeals), StartDate, MealPrice }
+      data: { CustomerName, EmailAddress, TotalMeals: Number(TotalMeals), MealsRemaining: Number(TotalMeals), StartDate, MealPrice, MealsPerDay: Number(MealsPerDay) }
     });
   } catch (error) {
     console.error('[add-subscription] Error:', error);

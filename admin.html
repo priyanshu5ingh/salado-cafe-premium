@@ -49,6 +49,13 @@
           <label class="text-xs text-slate-400 uppercase tracking-wider mb-1 block">Price</label>
           <input type="text" name="price" placeholder="e.g. ₹999" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-400" required>
         </div>
+        <div class="w-20">
+          <label class="text-xs text-slate-400 uppercase tracking-wider mb-1 block">Plan</label>
+          <select name="mealsPerDay" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-400" required>
+            <option value="1">1/day</option>
+            <option value="2">2/day</option>
+          </select>
+        </div>
         <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-500 text-slate-950 font-semibold hover:bg-emerald-400 transition-colors whitespace-nowrap">Add New Subscriber</button>
       </form>
 
@@ -62,6 +69,7 @@
               <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Meals Remaining</th>
               <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Start Date</th>
               <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Meal Price</th>
+              <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Plan</th>
               <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider">Action</th>
             </tr>
           </thead>
@@ -112,7 +120,7 @@
         tableBody.innerHTML = '';
 
         if (subscriptions.length === 0) {
-          tableBody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-300">No subscription data found.</td></tr>';
+          tableBody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-slate-300">No subscription data found.</td></tr>';
           return;
         }
 
@@ -121,10 +129,27 @@
         subscriptions.forEach((sub) => {
           const isExhausted = Number(sub.MealsRemaining) <= 0;
           const deliveredToday = sub.LastDeliveredDate === todayFormatted;
-          const disableDelivered = isExhausted || deliveredToday;
+          const mealsPerDay = Number(sub.MealsPerDay) || 1;
           const row = document.createElement('tr');
           row.className = 'hover:bg-white/5 transition-colors';
           row.dataset.rowNumber = sub.rowNumber;
+
+          let deliverButtons = '';
+          if (deliveredToday) {
+            deliverButtons = `
+              <button class="mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-slate-500/50 text-slate-300 disabled:cursor-not-allowed" data-row="${sub.rowNumber}" data-meals="1" disabled>Delivered Today</button>`;
+          } else if (isExhausted) {
+            deliverButtons = `
+              <button class="mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-slate-500/50 text-slate-300 disabled:cursor-not-allowed" data-row="${sub.rowNumber}" data-meals="1" disabled>Delivered</button>`;
+          } else if (mealsPerDay === 2) {
+            deliverButtons = `
+              <button class="mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-emerald-400 hover:bg-emerald-300 text-slate-950 disabled:cursor-not-allowed" data-row="${sub.rowNumber}" data-meals="1">Deliver 1</button>
+              <button class="mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-emerald-400 hover:bg-emerald-300 text-slate-950 ml-1 disabled:cursor-not-allowed" data-row="${sub.rowNumber}" data-meals="2">Deliver 2</button>`;
+          } else {
+            deliverButtons = `
+              <button class="mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-emerald-400 hover:bg-emerald-300 text-slate-950 disabled:cursor-not-allowed" data-row="${sub.rowNumber}" data-meals="1">Deliver 1</button>`;
+          }
+
           row.innerHTML = `
             <td class="cell-name px-4 py-3 text-sm text-slate-100">${escapeHtml(sub.CustomerName || '')}</td>
             <td class="cell-email px-4 py-3 text-sm text-slate-300">${escapeHtml(sub.EmailAddress || '')}</td>
@@ -132,20 +157,10 @@
             <td class="meals-remaining-cell cell-remaining px-4 py-3 text-sm font-semibold ${isExhausted ? 'text-rose-300' : 'text-emerald-300'}">${sub.MealsRemaining ?? 0}</td>
             <td class="cell-startdate px-4 py-3 text-sm text-slate-300">${escapeHtml(sub.StartDate || '-')}</td>
             <td class="cell-price px-4 py-3 text-sm text-slate-300">${escapeHtml(sub.MealPrice || '-')}</td>
+            <td class="cell-plan px-4 py-3 text-sm text-slate-300">${mealsPerDay}</td>
             <td class="px-4 py-3">
-              <button
-                class="mark-delivered px-3 py-2 text-sm rounded-xl font-semibold text-slate-950 disabled:cursor-not-allowed ${disableDelivered ? 'bg-slate-500/50 text-slate-300' : 'bg-emerald-400 hover:bg-emerald-300'}"
-                data-row="${sub.rowNumber}"
-                ${disableDelivered ? 'disabled' : ''}
-              >
-                ${deliveredToday ? 'Delivered Today' : (isExhausted ? 'Delivered' : 'Mark Delivered')}
-              </button>
-              <button
-                class="edit-btn px-3 py-2 text-sm rounded-xl font-semibold bg-indigo-500 hover:bg-indigo-400 text-white ml-2"
-                data-row="${sub.rowNumber}"
-              >
-                Edit
-              </button>
+              ${deliverButtons}
+              <button class="edit-btn px-3 py-2 text-sm rounded-xl font-semibold bg-indigo-500 hover:bg-indigo-400 text-white ml-1" data-row="${sub.rowNumber}">Edit</button>
             </td>
           `;
           tableBody.appendChild(row);
@@ -162,8 +177,9 @@
         const remainingCell = row.querySelector('.cell-remaining');
         const startDateCell = row.querySelector('.cell-startdate');
         const priceCell = row.querySelector('.cell-price');
+        const planCell = row.querySelector('.cell-plan');
         const editBtn = row.querySelector('.edit-btn');
-        const deliverBtn = row.querySelector('.mark-delivered');
+        const deliverBtns = row.querySelectorAll('.mark-delivered');
 
         const currentName = nameCell.textContent;
         const currentEmail = emailCell.textContent;
@@ -171,6 +187,7 @@
         const currentRemaining = remainingCell.textContent;
         const currentStartDate = startDateCell.textContent === '-' ? '' : startDateCell.textContent;
         const currentPrice = priceCell.textContent === '-' ? '' : priceCell.textContent;
+        const currentPlan = planCell.textContent;
 
         nameCell.innerHTML = `<input type="text" class="edit-input bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 w-full" value="${escapeHtml(currentName)}">`;
         emailCell.innerHTML = `<input type="text" class="edit-input bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 w-full" value="${escapeHtml(currentEmail)}">`;
@@ -178,10 +195,16 @@
         remainingCell.innerHTML = `<input type="number" class="edit-input bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 w-full" value="${currentRemaining}">`;
         startDateCell.innerHTML = `<input type="text" class="edit-input bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 w-full" value="${escapeHtml(currentStartDate)}">`;
         priceCell.innerHTML = `<input type="text" class="edit-input bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 w-full" value="${escapeHtml(currentPrice)}">`;
+        planCell.innerHTML = `<select class="edit-input bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-100 w-full">
+          <option value="1"${currentPlan === '1' ? ' selected' : ''}>1</option>
+          <option value="2"${currentPlan === '2' ? ' selected' : ''}>2</option>
+        </select>`;
 
-        deliverBtn.disabled = true;
-        deliverBtn.className = 'mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-slate-500/50 text-slate-300 disabled:cursor-not-allowed';
-        deliverBtn.textContent = 'Editing...';
+        deliverBtns.forEach(btn => {
+          btn.disabled = true;
+          btn.className = 'mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-slate-500/50 text-slate-300 disabled:cursor-not-allowed';
+          btn.textContent = 'Editing...';
+        });
 
         editBtn.textContent = 'Save';
         editBtn.className = 'edit-btn px-3 py-2 text-sm rounded-xl font-semibold bg-emerald-500 hover:bg-emerald-400 text-white ml-2';
@@ -202,7 +225,8 @@
           TotalMeals: Number(values[2]),
           MealsRemaining: Number(values[3]),
           StartDate: values[4],
-          MealPrice: values[5]
+          MealPrice: values[5],
+          MealsPerDay: Number(values[6])
         };
 
         try {
@@ -228,20 +252,14 @@
             sub.MealsRemaining = payload.MealsRemaining;
             sub.StartDate = payload.StartDate;
             sub.MealPrice = payload.MealPrice;
+            sub.MealsPerDay = payload.MealsPerDay;
           }
 
           renderTable();
           setStatus(`Subscription for ${payload.CustomerName} updated successfully.`);
         } catch (error) {
           setStatus(`Save failed: ${error.message}`, true);
-          const sub = subscriptions.find(s => Number(s.rowNumber) === Number(rowNumber));
-          const isExhausted = sub ? Number(sub.MealsRemaining) <= 0 : false;
-          const deliverBtn = row.querySelector('.mark-delivered');
-          deliverBtn.disabled = isExhausted;
-          deliverBtn.className = `mark-delivered px-3 py-2 text-sm rounded-xl font-semibold text-slate-950 disabled:cursor-not-allowed ${isExhausted ? 'bg-slate-500/50 text-slate-300' : 'bg-emerald-400 hover:bg-emerald-300'}`;
-          deliverBtn.textContent = isExhausted ? 'Delivered' : 'Mark Delivered';
-          button.disabled = false;
-          button.textContent = 'Save';
+          renderTable();
         }
       }
 
@@ -263,10 +281,9 @@
         }
       }
 
-      async function markDelivered(rowNumber, button) {
+      async function markDelivered(rowNumber, mealsToDeduct, button) {
         const rowData = subscriptions.find((item) => Number(item.rowNumber) === Number(rowNumber));
         if (!rowData) return;
-        let keepDisabled = false;
 
         try {
           const response = await fetch('https://salado-cafe-premium.onrender.com/api/mark-delivered', {
@@ -281,7 +298,8 @@
               MealsRemaining: rowData.MealsRemaining,
               TotalMeals: rowData.TotalMeals,
               StartDate: rowData.StartDate,
-              MealPrice: rowData.MealPrice
+              MealPrice: rowData.MealPrice,
+              mealsToDeduct
             })
           });
 
@@ -290,9 +308,15 @@
             throw new Error(result.message || 'Failed to mark delivered');
           }
 
-          rowData.MealsRemaining = Number(result.data?.MealsRemaining ?? Math.max(rowData.MealsRemaining - 1, 0));
+          rowData.MealsRemaining = Number(result.data?.MealsRemaining ?? Math.max(rowData.MealsRemaining - mealsToDeduct, 0));
           rowData.LastDeliveredDate = getTodayFormatted();
           const tableRow = button.closest('tr');
+          const deliverBtns = tableRow ? tableRow.querySelectorAll('.mark-delivered') : [];
+          deliverBtns.forEach(btn => {
+            btn.disabled = true;
+            btn.className = 'mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-slate-500/50 text-slate-300 disabled:cursor-not-allowed';
+            btn.textContent = 'Delivered Today';
+          });
           const remainingCell = tableRow?.querySelector('.meals-remaining-cell');
           if (remainingCell) {
             remainingCell.textContent = String(rowData.MealsRemaining);
@@ -301,13 +325,6 @@
             remainingCell.classList.add('flash-success');
             setTimeout(() => remainingCell.classList.remove('flash-success'), 800);
           }
-          if (rowData.MealsRemaining <= 0) {
-            keepDisabled = true;
-            button.classList.add('bg-slate-500/50', 'text-slate-300');
-            button.classList.remove('bg-emerald-400', 'hover:bg-emerald-300');
-          }
-          button.textContent = 'Delivered Today';
-          button.disabled = true;
           setStatus(`Marked delivered for ${rowData.CustomerName}.`);
 
           if (rowData.MealsRemaining <= 0) {
@@ -327,14 +344,9 @@
               }
             }
           }
+          setTimeout(() => loadSubscriptions(), 1000);
         } catch (error) {
           setStatus(`Failed for ${rowData.CustomerName}: ${error.message}`, true);
-        } finally {
-          if (!keepDisabled) {
-            setTimeout(() => {
-              loadSubscriptions();
-            }, 1000);
-          }
         }
       }
 
@@ -346,7 +358,8 @@
           EmailAddress: formData.get('email'),
           TotalMeals: Number(formData.get('total')),
           StartDate: formData.get('startDate'),
-          MealPrice: formData.get('price')
+          MealPrice: formData.get('price'),
+          MealsPerDay: Number(formData.get('mealsPerDay'))
         };
 
         try {
@@ -376,7 +389,8 @@
           if (markBtn.disabled) return;
           markBtn.disabled = true;
           markBtn.textContent = 'Sending...';
-          await markDelivered(markBtn.dataset.row, markBtn);
+          const meals = Number(markBtn.dataset.meals) || 1;
+          await markDelivered(markBtn.dataset.row, meals, markBtn);
           return;
         }
 
