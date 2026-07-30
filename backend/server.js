@@ -510,6 +510,15 @@ app.get('/api/sales-data', async (req, res) => {
       }
     });
 
+    dailyRecords.forEach((record, idx) => {
+      const start = Math.max(0, idx - 6);
+      let sum = 0;
+      for (let j = start; j <= idx; j++) {
+        sum += dailyRecords[j].DailySales;
+      }
+      record.movingAverage = Number((sum / (idx - start + 1)).toFixed(2));
+    });
+
     const dailyGoal = dailyRecords.length > 0
       ? dailyRecords[dailyRecords.length - 1].DailyGoal
       : 0;
@@ -517,6 +526,9 @@ app.get('/api/sales-data', async (req, res) => {
     const monthlyProgress = totalGoal > 0
       ? Number(((totalSales / totalGoal) * 100).toFixed(1))
       : 0;
+
+    const avgDailySales = dailyRecords.length > 0 ? totalSales / dailyRecords.length : 0;
+    const projectedNextMonth = Number((avgDailySales * Math.pow(1.05, 30)).toFixed(2));
 
     let totalSubscriptionRevenue = 0;
     try {
@@ -543,7 +555,7 @@ app.get('/api/sales-data', async (req, res) => {
 
     return res.json({
       success: true,
-      data: { dailyRecords, totalSales, totalSubscriptionRevenue, grandTotalRevenue, dailyGoal, monthlyProgress }
+      data: { dailyRecords, totalSales, totalSubscriptionRevenue, grandTotalRevenue, dailyGoal, monthlyProgress, projectedNextMonth }
     });
   } catch (error) {
     console.error('[sales-data] Error:', error);

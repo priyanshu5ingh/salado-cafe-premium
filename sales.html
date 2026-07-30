@@ -14,7 +14,7 @@
       <a href="admin.html" class="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 font-semibold transition-colors">Back to Admin</a>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
       <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-lg">
         <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Total Sales</p>
         <p id="totalSales" class="text-3xl font-bold text-emerald-300">--</p>
@@ -30,6 +30,13 @@
       <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-lg">
         <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Grand Total Revenue</p>
         <p id="grandTotalRevenue" class="text-3xl font-bold text-violet-300">--</p>
+        <div class="mt-3 flex justify-center" style="max-height:100px">
+          <canvas id="revenueBreakdownChart"></canvas>
+        </div>
+      </div>
+      <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-lg">
+        <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">30-Day Growth Projection (1.05x)</p>
+        <p id="projectedNextMonth" class="text-3xl font-bold text-yellow-300">--</p>
       </div>
     </div>
 
@@ -48,7 +55,7 @@
       <form id="logSaleForm" class="flex flex-wrap items-end gap-4">
         <div>
           <label class="text-xs text-slate-400 uppercase tracking-wider mb-1 block">Date</label>
-          <input type="date" id="logDate" class="bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-400">
+          <input type="date" id="logDate" readonly class="bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-sm text-slate-500 focus:outline-none cursor-not-allowed">
         </div>
         <div>
           <label class="text-xs text-slate-400 uppercase tracking-wider mb-1 block">Daily Sales (₹)</label>
@@ -74,6 +81,7 @@
       const logStatus = document.getElementById('logStatus');
       const fetchStatus = document.getElementById('fetchStatus');
       let chartInstance = null;
+      let doughnutInstance = null;
 
       const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -86,7 +94,10 @@
         monthSelect.appendChild(opt);
       }
 
-      logDate.value = now.toISOString().split('T')[0];
+      const istOffset = 5.5 * 60 * 60 * 1000;
+      const istDate = new Date(now.getTime() + istOffset);
+      logDate.value = istDate.toISOString().split('T')[0];
+      logDate.readOnly = true;
 
       function formatINR(value) {
         return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(value);
@@ -99,16 +110,18 @@
           const json = await res.json();
           if (!json.success) throw new Error(json.message || 'Failed to load');
 
-          const { dailyRecords, totalSales, totalSubscriptionRevenue, grandTotalRevenue, dailyGoal, monthlyProgress } = json.data;
+          const { dailyRecords, totalSales, totalSubscriptionRevenue, grandTotalRevenue, dailyGoal, monthlyProgress, projectedNextMonth } = json.data;
 
           document.getElementById('totalSales').textContent = formatINR(totalSales);
           document.getElementById('dailyGoal').textContent = formatINR(dailyGoal);
           document.getElementById('monthlyProgress').textContent = Number(monthlyProgress) + '%';
+          document.getElementById('projectedNextMonth').textContent = formatINR(projectedNextMonth || 0);
 
           const subRevEl = document.getElementById('grandTotalRevenue');
           subRevEl.textContent = formatINR(grandTotalRevenue);
           subRevEl.title = `Sales: ${formatINR(totalSales)} | Subscriptions: ${formatINR(totalSubscriptionRevenue)}`;
 
+          updateDoughnut(totalSales, totalSubscriptionRevenue);
           fetchStatus.textContent = `${dailyRecords.length} day(s) loaded`;
           updateChart(dailyRecords);
         } catch (err) {
@@ -117,10 +130,51 @@
         }
       }
 
+      function updateDoughnut(salesVal, subVal) {
+        const canvas = document.getElementById('revenueBreakdownChart');
+        const parent = canvas.parentElement;
+        canvas.width = 100;
+        canvas.height = 100;
+        canvas.style.maxWidth = '100px';
+        canvas.style.maxHeight = '100px';
+
+        if (doughnutInstance) doughnutInstance.destroy();
+
+        doughnutInstance = new Chart(canvas, {
+          type: 'doughnut',
+          data: {
+            labels: ['Sales', 'Subscriptions'],
+            datasets: [{
+              data: [salesVal, subVal],
+              backgroundColor: ['#3b82f6', '#10b981'],
+              borderColor: 'transparent'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { color: '#cbd5e1', boxWidth: 10, padding: 8, font: { size: 10 } }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function (ctx) {
+                    return ctx.label + ': ' + formatINR(ctx.raw);
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
       function updateChart(dailyRecords) {
         const labels = dailyRecords.map(r => r.Date);
         const sales = dailyRecords.map(r => r.DailySales);
         const goals = dailyRecords.map(r => r.DailyGoal);
+        const movingAvgs = dailyRecords.map(r => r.movingAverage);
 
         if (chartInstance) chartInstance.destroy();
 
@@ -150,6 +204,17 @@
                 tension: 0.3,
                 pointRadius: 3,
                 pointBackgroundColor: '#ef4444'
+              },
+              {
+                label: '7-Day Trend',
+                data: movingAvgs,
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.05)',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.3,
+                pointRadius: 0,
+                pointHitRadius: 5
               }
             ]
           },
