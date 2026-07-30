@@ -469,17 +469,18 @@ app.get('/api/sales-data', async (req, res) => {
       });
     }
 
+    const now = new Date();
+    const targetMonth = req.query.month !== undefined ? parseInt(req.query.month, 10) - 1 : now.getMonth();
+    const targetYear = req.query.year !== undefined ? parseInt(req.query.year, 10) : now.getFullYear();
+
     const sheets = await getSheetsClient();
-    const response = await sheets.spreadsheets.values.get({
+
+    const salesResponse = await sheets.spreadsheets.values.get({
       spreadsheetId: salesSheetId,
       range: 'Sales_Master!A2:D'
     });
 
-    const rows = response.data.values || [];
-
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const rows = salesResponse.data.values || [];
 
     const dailyRecords = [];
     let totalSales = 0;
@@ -492,7 +493,7 @@ app.get('/api/sales-data', async (req, res) => {
       const parsed = new Date(dateStr);
       if (isNaN(parsed.getTime())) return;
 
-      if (parsed.getMonth() === currentMonth && parsed.getFullYear() === currentYear) {
+      if (parsed.getMonth() === targetMonth && parsed.getFullYear() === targetYear) {
         const sales = Number(row[1] || 0);
         const goal = Number(row[2] || 0);
         const pct = Number(row[3] || 0);
@@ -517,15 +518,86 @@ app.get('/api/sales-data', async (req, res) => {
       ? Number(((totalSales / totalGoal) * 100).toFixed(1))
       : 0;
 
+    let totalSubscriptionRevenue = 0;
+    try {
+      const subResponse = await sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: `${SHEET_NAME}!A2:F`
+      });
+      const subRows = subResponse.data.values || [];
+      subRows.forEach((subRow) => {
+        const mealsRemaining = Number(subRow[3] || 0);
+        if (mealsRemaining > 0) {
+          const rawPrice = String(subRow[5] || '0');
+          const numericPrice = parseFloat(rawPrice.replace(/[^0-9.]/g, ''));
+          if (!isNaN(numericPrice)) {
+            totalSubscriptionRevenue += numericPrice;
+          }
+        }
+      });
+    } catch (subError) {
+      console.warn('[sales-data] Failed to fetch subscription revenue:', subError.message);
+    }
+
+    const grandTotalRevenue = totalSales + totalSubscriptionRevenue;
+
     return res.json({
       success: true,
-      data: { dailyRecords, totalSales, dailyGoal, monthlyProgress }
+      data: { dailyRecords, totalSales, totalSubscriptionRevenue, grandTotalRevenue, dailyGoal, monthlyProgress }
     });
   } catch (error) {
     console.error('[sales-data] Error:', error);
     return res.status(500).json({
       success: false,
       message: 'Failed to fetch sales data',
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/log-sale', async (req, res) => {
+  try {
+    const salesSheetId = process.env.SALES_SPREADSHEET_ID;
+    if (!salesSheetId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing SALES_SPREADSHEET_ID environment variable'
+      });
+    }
+
+    const { Date: saleDate, DailySales, DailyGoal } = req.body;
+
+    if (!saleDate || DailySales === undefined || DailyGoal === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: Date, DailySales, DailyGoal'
+      });
+    }
+
+    const salesValue = Number(DailySales) || 0;
+    const goalValue = Number(DailyGoal) || 0;
+    const pctAchieved = goalValue > 0 ? Number(((salesValue / goalValue) * 100).toFixed(1)) : 0;
+
+    const sheets = await getSheetsClient();
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: salesSheetId,
+      range: 'Sales_Master!A:D',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [[saleDate, salesValue, goalValue, pctAchieved]]
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Sale logged successfully',
+      data: { Date: saleDate, DailySales: salesValue, DailyGoal: goalValue, PctAchieved: pctAchieved }
+    });
+  } catch (error) {
+    console.error('[log-sale] Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to log sale',
       error: error.message
     });
   }
