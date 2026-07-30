@@ -130,17 +130,22 @@
           const isExhausted = Number(sub.MealsRemaining) <= 0;
           const deliveredToday = sub.LastDeliveredDate === todayFormatted;
           const mealsPerDay = Number(sub.MealsPerDay) || 1;
+          const mealsDeliveredToday = deliveredToday ? (Number(sub.MealsDeliveredToday) || 0) : 0;
+          const dailyLimitReached = deliveredToday && mealsDeliveredToday >= mealsPerDay;
           const row = document.createElement('tr');
           row.className = 'hover:bg-white/5 transition-colors';
           row.dataset.rowNumber = sub.rowNumber;
 
           let deliverButtons = '';
-          if (deliveredToday) {
-            deliverButtons = `
-              <button class="mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-slate-500/50 text-slate-300 disabled:cursor-not-allowed" data-row="${sub.rowNumber}" data-meals="1" disabled>Delivered Today</button>`;
-          } else if (isExhausted) {
+          if (isExhausted) {
             deliverButtons = `
               <button class="mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-slate-500/50 text-slate-300 disabled:cursor-not-allowed" data-row="${sub.rowNumber}" data-meals="1" disabled>Delivered</button>`;
+          } else if (dailyLimitReached) {
+            deliverButtons = `
+              <button class="mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-slate-500/50 text-slate-300 disabled:cursor-not-allowed" data-row="${sub.rowNumber}" data-meals="1" disabled>Delivered Today</button>`;
+          } else if (deliveredToday && mealsPerDay === 2 && mealsDeliveredToday === 1) {
+            deliverButtons = `
+              <button class="mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-emerald-400 hover:bg-emerald-300 text-slate-950 disabled:cursor-not-allowed" data-row="${sub.rowNumber}" data-meals="1">Deliver 1</button>`;
           } else if (mealsPerDay === 2) {
             deliverButtons = `
               <button class="mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-emerald-400 hover:bg-emerald-300 text-slate-950 disabled:cursor-not-allowed" data-row="${sub.rowNumber}" data-meals="1">Deliver 1</button>
@@ -310,13 +315,8 @@
 
           rowData.MealsRemaining = Number(result.data?.MealsRemaining ?? Math.max(rowData.MealsRemaining - mealsToDeduct, 0));
           rowData.LastDeliveredDate = getTodayFormatted();
+          rowData.MealsDeliveredToday = Number(result.data?.MealsDeliveredToday ?? mealsToDeduct);
           const tableRow = button.closest('tr');
-          const deliverBtns = tableRow ? tableRow.querySelectorAll('.mark-delivered') : [];
-          deliverBtns.forEach(btn => {
-            btn.disabled = true;
-            btn.className = 'mark-delivered px-3 py-2 text-sm rounded-xl font-semibold bg-slate-500/50 text-slate-300 disabled:cursor-not-allowed';
-            btn.textContent = 'Delivered Today';
-          });
           const remainingCell = tableRow?.querySelector('.meals-remaining-cell');
           if (remainingCell) {
             remainingCell.textContent = String(rowData.MealsRemaining);

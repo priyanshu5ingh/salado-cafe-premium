@@ -59,7 +59,7 @@ async function getSubscriptions() {
   const sheets = await getSheetsClient();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${SHEET_NAME}!A2:H`
+    range: `${SHEET_NAME}!A2:I`
   });
 
   const rows = response.data.values || [];
@@ -73,7 +73,8 @@ async function getSubscriptions() {
     StartDate: row[4] || '',
     MealPrice: row[5] || '',
     LastDeliveredDate: row[6] || '',
-    MealsPerDay: Number(row[7] || 1)
+    MealsPerDay: Number(row[7] || 1),
+    MealsDeliveredToday: Number(row[8] || 0)
   }));
 }
 
@@ -194,12 +195,28 @@ app.post('/api/mark-delivered', async (req, res) => {
     const todayFormatted = `${day}-${month}-${year}`;
 
     const sheets = await getSheetsClient();
+    const ghiRead = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_NAME}!G${rowNumber}:I${rowNumber}`
+    });
+    const ghiValues = ghiRead.data.values?.[0] || [];
+    const currentLastDelivered = ghiValues[0] || '';
+    const currentMealsPerDay = ghiValues[1] || '';
+    const currentMealsDeliveredToday = Number(ghiValues[2] || 0);
+
+    let newMealsDeliveredToday;
+    if (currentLastDelivered === todayFormatted) {
+      newMealsDeliveredToday = currentMealsDeliveredToday + Number(mealsToDeduct);
+    } else {
+      newMealsDeliveredToday = Number(mealsToDeduct);
+    }
+
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_NAME}!G${rowNumber}`,
+      range: `${SHEET_NAME}!G${rowNumber}:I${rowNumber}`,
       valueInputOption: 'RAW',
       requestBody: {
-        values: [[todayFormatted]]
+        values: [[todayFormatted, currentMealsPerDay, newMealsDeliveredToday]]
       }
     });
 
@@ -263,7 +280,8 @@ app.post('/api/mark-delivered', async (req, res) => {
         TotalMeals: safeTotalMeals,
         StartDate,
         MealPrice,
-        mealsToDeduct
+        mealsToDeduct,
+        MealsDeliveredToday: newMealsDeliveredToday
       }
     });
   } catch (error) {
