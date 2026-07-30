@@ -472,31 +472,54 @@ app.get('/api/sales-data', async (req, res) => {
     const sheets = await getSheetsClient();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: salesSheetId,
-      range: 'Sheet1!A2:G32'
+      range: 'Sales_Master!A2:D'
     });
 
     const rows = response.data.values || [];
 
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
     const dailyRecords = [];
-    const weeklyAnalysis = {};
+    let totalSales = 0;
+    let totalGoal = 0;
 
     rows.forEach((row) => {
-      if (row[0] || row[1] || row[2] || row[3]) {
+      const dateStr = row[0] || '';
+      if (!dateStr) return;
+
+      const parsed = new Date(dateStr);
+      if (isNaN(parsed.getTime())) return;
+
+      if (parsed.getMonth() === currentMonth && parsed.getFullYear() === currentYear) {
+        const sales = Number(row[1] || 0);
+        const goal = Number(row[2] || 0);
+        const pct = Number(row[3] || 0);
+
         dailyRecords.push({
-          Date: row[0] || '',
-          DailySales: Number(row[1] || 0),
-          DailyGoal: Number(row[2] || 0),
-          PctAchieved: Number(row[3] || 0)
+          Date: dateStr,
+          DailySales: sales,
+          DailyGoal: goal,
+          PctAchieved: pct
         });
-      }
-      if (row[5] || row[6]) {
-        weeklyAnalysis[row[5] || ''] = row[6] || '';
+
+        totalSales += sales;
+        totalGoal += goal;
       }
     });
 
+    const dailyGoal = dailyRecords.length > 0
+      ? dailyRecords[dailyRecords.length - 1].DailyGoal
+      : 0;
+
+    const monthlyProgress = totalGoal > 0
+      ? Number(((totalSales / totalGoal) * 100).toFixed(1))
+      : 0;
+
     return res.json({
       success: true,
-      data: { dailyRecords, weeklyAnalysis }
+      data: { dailyRecords, totalSales, dailyGoal, monthlyProgress }
     });
   } catch (error) {
     console.error('[sales-data] Error:', error);
