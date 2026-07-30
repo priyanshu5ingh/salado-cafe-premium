@@ -459,6 +459,55 @@ app.post('/api/add-subscription', async (req, res) => {
   }
 });
 
+app.get('/api/sales-data', async (req, res) => {
+  try {
+    const salesSheetId = process.env.SALES_SPREADSHEET_ID;
+    if (!salesSheetId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing SALES_SPREADSHEET_ID environment variable'
+      });
+    }
+
+    const sheets = await getSheetsClient();
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: salesSheetId,
+      range: 'Sheet1!A2:G32'
+    });
+
+    const rows = response.data.values || [];
+
+    const dailyRecords = [];
+    const weeklyAnalysis = {};
+
+    rows.forEach((row) => {
+      if (row[0] || row[1] || row[2] || row[3]) {
+        dailyRecords.push({
+          Date: row[0] || '',
+          DailySales: Number(row[1] || 0),
+          DailyGoal: Number(row[2] || 0),
+          PctAchieved: Number(row[3] || 0)
+        });
+      }
+      if (row[5] || row[6]) {
+        weeklyAnalysis[row[5] || ''] = row[6] || '';
+      }
+    });
+
+    return res.json({
+      success: true,
+      data: { dailyRecords, weeklyAnalysis }
+    });
+  } catch (error) {
+    console.error('[sales-data] Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch sales data',
+      error: error.message
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

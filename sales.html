@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Command Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-slate-100">
+  <main class="max-w-7xl mx-auto px-4 py-10">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-semibold text-white">Sales Command Center</h1>
+      <a href="admin.html" class="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 font-semibold transition-colors">Back to Admin</a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-lg">
+        <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Total Sales</p>
+        <p id="totalSales" class="text-3xl font-bold text-emerald-300">--</p>
+      </div>
+      <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-lg">
+        <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Daily Goal</p>
+        <p id="dailyGoal" class="text-3xl font-bold text-blue-300">--</p>
+      </div>
+      <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-lg">
+        <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Monthly Progress</p>
+        <p id="monthlyProgress" class="text-3xl font-bold text-amber-300">--</p>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-lg">
+      <canvas id="salesChart" height="100"></canvas>
+    </div>
+  </main>
+
+  <script>
+    (async () => {
+      try {
+        const res = await fetch('https://salado-cafe-premium.onrender.com/api/sales-data');
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message || 'Failed to load');
+
+        const { dailyRecords, weeklyAnalysis } = json.data;
+
+        const totalSales = dailyRecords.reduce((sum, r) => sum + r.DailySales, 0);
+        document.getElementById('totalSales').textContent = '$' + totalSales.toFixed(2);
+
+        const latestGoal = dailyRecords.length > 0 ? dailyRecords[dailyRecords.length - 1].DailyGoal : 0;
+        document.getElementById('dailyGoal').textContent = '$' + latestGoal.toFixed(2);
+
+        const totalGoal = dailyRecords.reduce((sum, r) => sum + r.DailyGoal, 0);
+        const pct = totalGoal > 0 ? ((totalSales / totalGoal) * 100).toFixed(1) : '0.0';
+        document.getElementById('monthlyProgress').textContent = pct + '%';
+
+        const labels = dailyRecords.map(r => r.Date);
+        const sales = dailyRecords.map(r => r.DailySales);
+        const goals = dailyRecords.map(r => r.DailyGoal);
+
+        new Chart(document.getElementById('salesChart'), {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: 'Daily Sales',
+                data: sales,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4,
+                pointBackgroundColor: '#3b82f6'
+              },
+              {
+                label: 'Daily Goal',
+                data: goals,
+                borderColor: '#ef4444',
+                borderWidth: 2,
+                borderDash: [6, 4],
+                fill: false,
+                tension: 0.3,
+                pointRadius: 3,
+                pointBackgroundColor: '#ef4444'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                labels: { color: '#cbd5e1' }
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: '#94a3b8' },
+                grid: { color: 'rgba(148, 163, 184, 0.1)' }
+              },
+              y: {
+                beginAtZero: true,
+                ticks: { color: '#94a3b8' },
+                grid: { color: 'rgba(148, 163, 184, 0.1)' }
+              }
+            }
+          }
+        });
+      } catch (err) {
+        document.getElementById('totalSales').textContent = 'Error';
+        document.getElementById('dailyGoal').textContent = 'Error';
+        document.getElementById('monthlyProgress').textContent = 'Error';
+        console.error(err);
+      }
+    })();
+  </script>
+</body>
+</html>
