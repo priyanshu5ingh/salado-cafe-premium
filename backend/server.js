@@ -14,8 +14,33 @@ const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY;
 const EMAIL_USER = process.env.EMAIL_USER;
 const EMAIL_APP_PASSWORD = process.env.EMAIL_APP_PASSWORD;
 
-app.use(cors());
+const ALLOWED_ORIGINS = [
+  'https://priyanshu5ingh.github.io',
+  'http://localhost:5500',
+  'http://127.0.0.1:5500',
+  'http://localhost:3000',
+  'http://localhost:5000'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false
+}));
+app.options('*', cors());
 app.use(express.json());
+
+// Health check - useful to confirm CORS + Render deploy without hitting Sheets API
+app.get('/api/health', (req, res) => {
+  return res.json({ success: true, message: 'Backend is running', timestamp: new Date().toISOString() });
+});
 
 function validateEnv() {
   const missing = [];

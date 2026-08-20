@@ -114,9 +114,20 @@
           .replace(/'/g, '&#39;');
       }
 
+      const API_BASE = 'https://salado-cafe-premium.onrender.com';
+      let retryTimer = null;
+
       function setStatus(message, isError = false) {
         statusMessage.textContent = message;
         statusMessage.className = `text-sm mb-4 ${isError ? 'text-rose-300' : 'text-slate-300'}`;
+        if (isError && message.includes('Render')) {
+          statusMessage.innerHTML = message + ' <a href="https://dashboard.render.com" target="_blank" class="underline text-indigo-300 hover:text-indigo-200">Open Render Dashboard</a>';
+        }
+      }
+
+      function isNetworkOrCorsError(error) {
+        const msg = (error && error.message) ? error.message : String(error);
+        return msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Load failed') || error.name === 'TypeError';
       }
 
       function renderTable() {
@@ -241,7 +252,7 @@
           button.disabled = true;
           button.textContent = 'Saving...';
 
-          const response = await fetch('https://salado-cafe-premium.onrender.com/api/update-subscription', {
+          const response = await fetch(`${API_BASE}/api/update-subscription`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -271,21 +282,53 @@
         }
       }
 
-      async function loadSubscriptions() {
+      async function loadSubscriptions(retryCount = 0) {
         try {
-          setStatus('Loading subscriptions...');
-          const response = await fetch('https://salado-cafe-premium.onrender.com/api/subscriptions');
-          const result = await response.json();
+          if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+          if (retryCount === 0) {
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = 'Loading...';
+            setStatus('Loading subscriptions...');
+          } else {
+            setStatus(`Backend waking up — retry ${retryCount}/3...`, false);
+          }
+
+          const response = await fetch(`${API_BASE}/api/subscriptions`, { method: 'GET', mode: 'cors' });
+
+          let result;
+          try {
+            result = await response.json();
+          } catch (parseError) {
+            const text = await response.text().catch(() => '');
+            if (text.includes('<!DOCTYPE') || response.status === 502) {
+              throw new Error(`Render 502 Bad Gateway — backend is asleep or crashed (HTTP ${response.status}).`);
+            }
+            throw new Error(`Server returned non-JSON (HTTP ${response.status}): ${text.slice(0, 120)}`);
+          }
 
           if (!response.ok || !result.success) {
-            throw new Error(result.message || 'Failed to fetch subscriptions');
+            throw new Error(result.message || `Server error (HTTP ${response.status})`);
           }
 
           subscriptions = Array.isArray(result.data) ? result.data : [];
           renderTable();
           setStatus(`Loaded ${subscriptions.length} subscription(s).`);
         } catch (error) {
-          setStatus(error.message, true);
+          const networkError = isNetworkOrCorsError(error);
+          const is502 = error.message.includes('502');
+
+          if ((networkError || is502) && retryCount < 3) {
+            const delaySec = (retryCount + 1) * 5;
+            setStatus(`Backend unavailable (Render 502 / CORS blocked because backend is down — not a code bug). Auto-retry in ${delaySec}s... (${error.message}) — Render free instances sleep after 15m idle.`, true);
+            retryTimer = setTimeout(() => loadSubscriptions(retryCount + 1), delaySec * 1000);
+          } else if (networkError || is502) {
+            setStatus(`Failed to fetch: Backend at ${API_BASE} is down (502 Bad Gateway → browser shows "CORS blocked" because the 502 page has no CORS header). Fix: 1) Open Render Dashboard → Manual Deploy → Clear cache & deploy 2) Wait 60s 3) Click Refresh. Details: ${error.message}`, true);
+          } else {
+            setStatus(error.message, true);
+          }
+        } finally {
+          refreshBtn.disabled = false;
+          refreshBtn.textContent = 'Refresh';
         }
       }
 
@@ -294,7 +337,7 @@
         if (!rowData) return;
 
         try {
-          const response = await fetch('https://salado-cafe-premium.onrender.com/api/mark-delivered', {
+          const response = await fetch(`${API_BASE}/api/mark-delivered`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -333,7 +376,7 @@
           if (rowData.MealsRemaining <= 0) {
             if (confirm('Meals are 0! Do you want to send a Subscription Ended email to ' + rowData.CustomerName + '?')) {
               try {
-                await fetch('https://salado-cafe-premium.onrender.com/api/send-ended-email', {
+                await fetch(`${API_BASE}/api/send-ended-email`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
@@ -367,7 +410,7 @@
 
         try {
           setStatus('Adding subscriber...');
-          const response = await fetch('https://salado-cafe-premium.onrender.com/api/add-subscription', {
+          const response = await fetch(`${API_BASE}/api/add-subscription`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
